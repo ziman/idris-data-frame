@@ -2,6 +2,7 @@ module Main
 
 import Data.List
 import Data.Vect
+import Decidable.Equality
 
 %default total
 
@@ -34,9 +35,10 @@ record DF (sig : Sig) where
 
 namespace InSig
   public export
-  data InSig : String -> Type -> Sig -> Type where
-    Here : InSig cn a (cn :- a :: sig)
-    There : InSig cn a sig -> InSig cn a (cn' :- a' :: sig)
+  data InSig : (cn : String) -> (a : Type) -> (sig : Sig) -> Type where
+    [search cn sig]
+    Here : InSig cn x (cn :- x :: sig)
+    There : InSig cn x sig -> InSig cn x (cn' :- x' :: sig)
 
 extract :
     Columns rowCount sig
@@ -46,7 +48,11 @@ extract (cn :- xs :: cols) Here = xs
 extract (cn :- xs :: cols) (There pf) = extract cols pf
 
 infix 3 ^.
-(^.) : (df : DF sig) -> (cn : String) -> {auto pf : InSig cn a sig} -> Vect (rowCount df) a
+(^.) :
+    (df : DF sig)
+    -> (cn : String)
+    -> {auto pf : InSig cn a sig}
+    -> Vect (rowCount df) a
 (^.) df cn {pf} = extract (columns df) pf
 
 df : DF ["name" :- String, "age" :- Int]
