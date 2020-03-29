@@ -61,6 +61,12 @@ Fractional a => Fractional (Expr n sig a) where
 (<=) : Ord a => Expr n sig a -> Expr n sig a -> Expr n sig Bool
 (<=) = BinOp (<=)
 
+(&&) : Expr n sig Bool -> Expr n sig Bool -> Expr n sig Bool
+(&&) = BinOp (\x, y => x && Delay y)
+
+(||) : Expr n sig Bool -> Expr n sig Bool -> Expr n sig Bool
+(||) = BinOp (\x, y => x || Delay y)
+
 export
 eval : (df : DF sig) -> Expr (rowCount df) sig a -> Vect (rowCount df) a
 eval df (L x) = replicate (rowCount df) x
