@@ -61,6 +61,10 @@ Callum    67 M      cat    yes
 Hamish    78 M      futret yes          
 ```
 
+Expressions are applicative functors and have instances
+of `Num`, `Neg`, `Fractional`, `Integral`, etc. as long as
+the underlying types do, to reduce syntactic noise.
+
 Some more manipulation:
 ```idris
 pets
