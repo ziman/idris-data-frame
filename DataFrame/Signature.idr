@@ -20,11 +20,19 @@ public export
 Sig : Type
 Sig = List (Named Type)
 
+-- for derived sequences with unnamed elements
 namespace All
   public export
   data All : (Type -> Type) -> Sig -> Type where
     Nil : All p []
     (::) : p a -> All p sig -> All p (cn :- a :: sig)
+
+-- for derived sequences with named elements
+namespace SigF
+  public export
+  data SigF : (Type -> Type) -> Sig -> Type where
+    Nil : SigF p []
+    (::) : (e : Named (p a)) -> SigF p sig -> SigF p (name e :- a :: sig)
 
 namespace InSig
   public export
