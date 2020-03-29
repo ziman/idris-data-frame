@@ -10,6 +10,11 @@ import public DataFrame.Expr
 
 %default total
 
+infixl 3 ~>
+public export
+(~>) : a -> (a -> b) -> b
+(~>) x f = f x
+
 export
 where_ : {sig : Sig} -> (Expr sig Bool) -> (df : DF sig) -> DF sig
 where_ p df = MkDF (columns df `where_` eval df p)
@@ -38,8 +43,10 @@ data OrderBy : Sig -> Type where
   Asc : (cn : String) -> Ord a => InSig cn a sig => OrderBy sig
   Desc : (cn : String) -> Ord a => InSig cn a sig => OrderBy sig
 
+orderStep : OrderBy sig -> DF sig -> DF sig
+orderStep (Asc x) df = MkDF $ orderBy (df ^. x) (columns df)
+orderStep (Desc x) df = MkDF $ orderBy (reverse $ df ^. x) (columns df)
+
 export
 orderBy : {sig : Sig} -> List (OrderBy sig) -> DF sig -> DF sig
-orderBy [] df = df
-orderBy (Asc  x :: xs) df = MkDF $ Columns.orderBy (          df ^. x) (columns df)
-orderBy (Desc x :: xs) df = MkDF $ Columns.orderBy (reverse $ df ^. x) (columns df)
+orderBy xs df = foldr orderStep df xs
