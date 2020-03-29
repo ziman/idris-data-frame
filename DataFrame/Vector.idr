@@ -70,6 +70,7 @@ export
 where_ : Vect n a -> (mask : Vect n Bool) -> Vect (trueCount mask) a
 where_ [] [] = []
 where_ (x :: xs) (True :: mask) = x :: (xs `where_` mask)
+where_ (x :: xs) (False :: mask) = xs `where_` mask
 
 export
 take : (m : Nat) -> Vect n a -> Vect (minimum m n) a

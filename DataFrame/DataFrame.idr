@@ -9,7 +9,8 @@ record DF (sig : Sig) where
   {rowCount : Nat}
   columns : Columns rowCount sig
 
-infix 3 ^.
+-- binops are infix 6
+infix 7 ^.
 export
 (^.) :
     (df : DF sig)
