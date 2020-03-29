@@ -57,3 +57,27 @@ export
 export
 (/) : Op Fractional
 (/) = zipWith (/)
+
+public export
+trueCount : Vect n Bool -> Nat
+trueCount [] = 0
+trueCount (True  :: xs) = S (trueCount xs)
+trueCount (False :: xs) =    trueCount xs
+
+infix 3 `where_`
+export
+where_ : Vect n a -> (mask : Vect n Bool) -> Vect (trueCount mask) a
+where_ [] [] = []
+where_ (x :: xs) (True :: mask) = x :: (xs `where_` mask)
+
+public export
+minNat : Nat -> Nat -> Nat
+minNat Z n = Z
+minNat (S m) Z = Z
+minNat (S m) (S n) = S (minNat m n)
+
+export
+take : (m : Nat) -> Vect n a -> Vect (minNat m n) a
+take Z xs = []
+take (S m) [] = []
+take (S m) (x :: xs) = x :: take m xs

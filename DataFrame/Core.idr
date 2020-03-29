@@ -8,18 +8,6 @@ import public DataFrame.Vector
 
 %default total
 
-public export
-interface CsvValue a where
-  fromString : String -> Either String a
-
-export
-CsvValue String where
-  fromString str = Right str
-
-export
-CsvValue Int where
-  fromString str = Right (cast str)  -- TODO
-
 -- (::) is infixr 7
 infix 8 :-
 public export
@@ -32,11 +20,11 @@ public export
 Sig : Type
 Sig = List SigItem
 
-namespace CsvSig
+namespace SigAll
   public export
-  data CsvSig : Sig -> Type where
-    Nil : CsvSig []
-    (::) : CsvValue a -> CsvSig sig -> CsvSig (cn :- a :: sig)
+  data SigAll : (Type -> Type) -> Sig -> Type where
+    Nil : SigAll p []
+    (::) : p a -> SigAll p sig -> SigAll p (cn :- a :: sig)
 
 public export
 record Column n a where
@@ -53,7 +41,7 @@ namespace Columns
 public export
 record DF (sig : Sig) where
   constructor MkDF
-  rowCount : Nat
+  {rowCount : Nat}
   columns : Columns rowCount sig
 
 namespace InSig
@@ -79,18 +67,3 @@ export
     -> {auto pf : InSig cn a sig}
     -> Vect (rowCount df) a
 (^.) df cn {pf} = extract (columns df) pf
-
-export
-(++) : {sig : Sig} -> Columns m sig -> Columns n sig -> Columns (m + n) sig
-(++) {sig = []} [] [] = []
-(++) {sig = cn :- a :: sig} (xs :: cs) (xs' :: cs') = (xs ++ xs') :: cs ++ cs'
-
-export
-reverse : {sig : Sig} -> Columns n sig -> Columns n sig
-reverse {sig = []} [] = []
-reverse {sig = cn :- a :: sig} (xs :: cs) = reverse xs :: reverse cs
-
-export
-empty : {sig : Sig} -> Columns 0 sig
-empty {sig = []} = []
-empty {sig = cn :- a :: sig} = [] :: empty

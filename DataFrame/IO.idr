@@ -3,7 +3,24 @@ module DataFrame.IO
 import System.File
 import Data.Strings
 
+import DataFrame.Columns
 import public DataFrame.Core
+
+public export
+interface CsvValue a where
+  fromString : String -> Either String a
+
+export
+CsvValue String where
+  fromString str = Right str
+
+export
+CsvValue Int where
+  fromString str = Right (cast str)  -- TODO
+
+public export
+CsvSig : Sig -> Type
+CsvSig = SigAll CsvValue
 
 parseCells : {sig : Sig} -> (csvSig : CsvSig sig) => Int -> List String -> Either String (Columns 1 sig)
 parseCells {sig = []} {csvSig = []} rowNr [] = Right []
@@ -30,7 +47,7 @@ parseRows rowNr (row :: rows) = do
 
 parseCsv : (sig : Sig) -> CsvSig sig => List String -> Either String (DF sig)
 parseCsv sig [] = Left "no header found"
-parseCsv sig (hdr :: rs) = MkDF (length rs) <$> (parseRows 1 $ fromList rs)
+parseCsv sig (hdr :: rs) = MkDF <$> (parseRows 1 $ fromList rs)
 
 readFileLines : String -> IO (Either String (List String))
 readFileLines fname =
