@@ -20,6 +20,7 @@ Right pets <- readCsv "/home/ziman/dev/dframe/example.csv"
   , "gender"    :- Maybe String
   , "pet"       :- Maybe String
   ]
+  Left err => putStrLn err
 
 printLn pets
 ```
