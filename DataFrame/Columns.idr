@@ -68,20 +68,37 @@ extract :
 extract (xs :: cols)  Here      = xs
 extract (xs :: cols) (There pf) = extract cols pf
 
+namespace StableSort
+  export
+  sortBy : (cmp : a -> a -> Ordering) -> (xs : List a) -> List a
+  sortBy cmp []  = []
+  sortBy cmp [x] = [x]
+  sortBy cmp xs  = let (x, y) = split xs in
+      mergeBy cmp
+            (StableSort.sortBy cmp (assert_smaller xs x))
+            (StableSort.sortBy cmp (assert_smaller xs y)) -- not structurally smaller, hence assert
+    where
+      splitRec : List b -> List a -> (List a -> List a) -> (List a, List a)
+      splitRec (_::_::xs) (y::ys) zs = splitRec xs ys (zs . ((::) y))
+      splitRec  _             ys  zs = (ys, zs [])
+
+      split : List a -> (List a, List a)
+      split xs = splitRec xs xs id
+
 -- TODO: do this properly
 vecSortBy : (a -> a -> Ordering) -> Vect n a -> Vect n a
 vecSortBy p xs = rewrite pf in fromList sorted
-  where
-    pf : n = List.length sorted
-    pf = believe_me (Refl {x = n})
+where
+  pf : n = List.length sorted
+  pf = believe_me (Refl {x = n})
 
-    sorted : List a
-    sorted = sortBy p (toList xs)
+  sorted : List a
+  sorted = StableSort.sortBy p (toList xs)
 
 permute : Ord a => Vect n a -> Vect n b -> Vect n b
 permute perm = map snd . vecSortBy (\x, y => fst x `compare` fst y) . zip perm
 
 export
-orderBy : Ord a => Vect n a -> Columns n sig -> Columns n sig
-orderBy perm [] = []
-orderBy perm (col :: cols) = permute perm col :: orderBy perm cols
+orderBy : Ord a => ({0 b : Type} -> Vect n b -> Vect n b) -> Vect n a -> Columns n sig -> Columns n sig
+orderBy f perm [] = []
+orderBy f perm (col :: cols) = f (permute perm col) :: orderBy f perm cols

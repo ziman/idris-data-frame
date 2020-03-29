@@ -44,8 +44,8 @@ data OrderBy : Sig -> Type where
   Desc : (cn : String) -> Ord a => InSig cn a sig => OrderBy sig
 
 orderStep : OrderBy sig -> DF sig -> DF sig
-orderStep (Asc x) df = MkDF $ orderBy (df ^. x) (columns df)
-orderStep (Desc x) df = MkDF $ orderBy (reverse $ df ^. x) (columns df)
+orderStep (Asc  x) df = MkDF $ orderBy id      (df ^. x) (columns df)
+orderStep (Desc x) df = MkDF $ orderBy reverse (df ^. x) (columns df)
 
 export
 orderBy : {sig : Sig} -> List (OrderBy sig) -> DF sig -> DF sig
