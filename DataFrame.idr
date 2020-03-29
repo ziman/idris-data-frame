@@ -6,6 +6,7 @@ import public Data.List
 import public Data.Vect
 
 import public DataFrame.Utils
+import public DataFrame.Vector
 
 %default total
 
