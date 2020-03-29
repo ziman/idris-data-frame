@@ -3,8 +3,8 @@ module DataFrame.Columns
 import public Data.Vect
 
 import DataFrame.Utils
+import DataFrame.Vector
 import public DataFrame.Row
-import public DataFrame.Vector
 import public DataFrame.Signature
 
 public export

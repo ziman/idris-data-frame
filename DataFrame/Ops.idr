@@ -6,13 +6,13 @@ import DataFrame.Columns
 
 import public DataFrame.DataFrame
 import public DataFrame.Utils
-import public DataFrame.Vector
+import public DataFrame.Expr
 
 %default total
 
 export
-where_ : {sig : Sig} -> ((df : DF sig) -> Vect (rowCount df) Bool) -> DF sig -> DF sig
-where_ p df = MkDF (columns df `where_` p df)
+where_ : {sig : Sig} -> (Expr sig Bool) -> (df : DF sig) -> DF sig
+where_ p df = MkDF (columns df `where_` eval df p)
 
 export
 head : {sig : Sig} -> Nat -> DF sig -> DF sig

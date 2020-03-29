@@ -8,69 +8,85 @@ import public DataFrame.Signature
 %default total
 
 export
-data Expr : Nat -> Sig -> Type -> Type where
-  L : a -> Expr n sig a
-  Ls : Vect n a -> Expr n sig a
-  V : (cn : String) -> InSig cn a sig => Expr n sig a
-  Map : (a -> b) -> Expr n sig a -> Expr n sig b
-  Ap : Expr n sig (a -> b) -> Expr n sig a -> Expr n sig b
+data Expr : Sig -> Type -> Type where
+  L : a -> Expr sig a
+  V : (cn : String) -> InSig cn a sig => Expr sig a
+
+  -- free applicative functor
+  Map : (a -> b) -> Expr sig a -> Expr sig b
+  Ap : Expr sig (a -> b) -> Expr sig a -> Expr sig b
 
   -- special common case for efficiency
-  BinOp : (a -> b -> c) -> Expr n sig a -> Expr n sig b -> Expr n sig c
+  BinOp : (a -> b -> c) -> Expr sig a -> Expr sig b -> Expr sig c
 
 export
-Functor (Expr n sig) where
+val : a -> Expr sig a
+val = L
+
+export
+col : (cn : String) -> InSig cn a sig => Expr sig a
+col = V
+
+export
+Functor (Expr sig) where
   map = Map
 
 export
-Applicative (Expr n sig) where
+Applicative (Expr sig) where
   pure = L
   (<*>) = Ap
 
 export
-Num a => Num (Expr n sig a) where
+Num a => Num (Expr sig a) where
   (+) = BinOp (+)
   (*) = BinOp (*)
   fromInteger = pure . fromInteger
 
 export
-Neg a => Neg (Expr n sig a) where
+Neg a => Neg (Expr sig a) where
   negate = map negate
   (-) = BinOp (-)
 
 export
-Fractional a => Fractional (Expr n sig a) where
+Fractional a => Fractional (Expr sig a) where
   (/) = BinOp (/)
   recip = map recip
 
-(==) : Eq a => Expr n sig a -> Expr n sig a -> Expr n sig Bool
+export
+(==) : Eq a => Expr sig a -> Expr sig a -> Expr sig Bool
 (==) = BinOp (==)
 
-(/=) : Eq a => Expr n sig a -> Expr n sig a -> Expr n sig Bool
+export
+(/=) : Eq a => Expr sig a -> Expr sig a -> Expr sig Bool
 (/=) = BinOp (/=)
 
-(>) : Ord a => Expr n sig a -> Expr n sig a -> Expr n sig Bool
+export
+(>) : Ord a => Expr sig a -> Expr sig a -> Expr sig Bool
 (>) = BinOp (>)
 
-(>=) : Ord a => Expr n sig a -> Expr n sig a -> Expr n sig Bool
+export
+(>=) : Ord a => Expr sig a -> Expr sig a -> Expr sig Bool
 (>=) = BinOp (>=)
 
-(<) : Ord a => Expr n sig a -> Expr n sig a -> Expr n sig Bool
+export
+(<) : Ord a => Expr sig a -> Expr sig a -> Expr sig Bool
 (<) = BinOp (<)
 
-(<=) : Ord a => Expr n sig a -> Expr n sig a -> Expr n sig Bool
+export
+(<=) : Ord a => Expr sig a -> Expr sig a -> Expr sig Bool
 (<=) = BinOp (<=)
 
-(&&) : Expr n sig Bool -> Expr n sig Bool -> Expr n sig Bool
+export
+(&&) : Expr sig Bool -> Expr sig Bool -> Expr sig Bool
 (&&) = BinOp (\x, y => x && Delay y)
 
-(||) : Expr n sig Bool -> Expr n sig Bool -> Expr n sig Bool
+export
+(||) : Expr sig Bool -> Expr sig Bool -> Expr sig Bool
 (||) = BinOp (\x, y => x || Delay y)
 
 export
-eval : (df : DF sig) -> Expr (rowCount df) sig a -> Vect (rowCount df) a
+eval : (df : DF sig) -> Expr sig a -> Vect (rowCount df) a
 eval df (L x) = replicate (rowCount df) x
-eval df (Ls xs) = xs
 eval df (V cn) = df ^. cn
 eval df (Map f xs) = map f (eval df xs)
 eval df (Ap fs xs) = zipWith id (eval df fs) (eval df xs)
