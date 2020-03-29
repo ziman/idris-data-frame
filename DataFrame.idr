@@ -1,10 +1,9 @@
-module Main
+module DataFrame
 
 import System.File
-import Data.List
-import Data.Vect
 import Data.Strings
-import Decidable.Equality
+import public Data.List
+import public Data.Vect
 
 import public DataFrame.Utils
 
@@ -13,6 +12,14 @@ import public DataFrame.Utils
 public export
 interface CsvValue a where
   fromString : String -> Either String a
+
+export
+CsvValue String where
+  fromString str = Right str
+
+export
+CsvValue Int where
+  fromString str = Right (cast str)  -- TODO
 
 -- (::) is infixr 7
 infix 8 :-
@@ -74,12 +81,6 @@ export
     -> Vect (rowCount df) a
 (^.) df cn {pf} = extract (columns df) pf
 
-df : DF ["name" :- String, "age" :- Int]
-df = MkDF 3
-    [ ["Joe", "Anne", "Lisa"]
-    , [1, 2, 3]
-    ]
-
 export
 (++) : {sig : Sig} -> Columns m sig -> Columns n sig -> Columns (m + n) sig
 (++) {sig = []} [] [] = []
@@ -134,6 +135,3 @@ readCsv fname sig =
   readFileLines fname <&> \case
     Left err => Left err
     Right lines => parseCsv sig lines
-
-main : IO ()
-main = putStrLn "hello world"
