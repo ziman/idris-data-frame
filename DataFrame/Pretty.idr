@@ -1,8 +1,11 @@
 module DataFrame.Pretty
 
+import Data.Nat
 import Data.Strings
 import DataFrame.Ops
 import public DataFrame.DataFrame
+
+%default total
 
 public export
 data MaybeShow : Type -> Type where
@@ -19,8 +22,17 @@ toStringColumns {sig = []} [] = []
 toStringColumns {sig = cn :- a :: sig} {mbShow = _ :: _} (xs :: cols) =
   (cn, map maybeShow xs) :: toStringColumns cols
 
+rpad : Nat -> Char -> String -> String
+rpad width c str =
+  case cmp (length str) width of
+    CmpLT d => str ++ pack (replicate d c)
+    _ => str
+
 layout : Vect n Nat -> Vect n (String, Vect m String) -> Vect n (Vect (2 + m) String)
-layout widths scols = ?rhs
+layout [] [] = []
+layout (width :: widths) ((cn, col) :: cols) =
+  (rpad width ' ' cn :: rpad width '-' "" :: map (rpad width ' ') col)
+  :: layout widths cols
 
 export
 toString : {sig : Sig} -> All MaybeShow sig => DF sig -> String
