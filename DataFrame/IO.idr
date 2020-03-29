@@ -4,7 +4,9 @@ import System.File
 import Data.Strings
 
 import DataFrame.Columns
-import public DataFrame.Core
+import DataFrame.Utils
+
+import public DataFrame.DataFrame
 
 public export
 interface CsvValue a where

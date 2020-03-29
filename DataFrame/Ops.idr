@@ -4,7 +4,7 @@ import Data.Vect
 
 import DataFrame.Columns
 
-import public DataFrame.Core
+import public DataFrame.DataFrame
 import public DataFrame.Utils
 import public DataFrame.Vector
 

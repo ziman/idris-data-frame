@@ -1,5 +1,6 @@
 module DataFrame.Pretty
 
+import DataFrame.Ops
 import public DataFrame.Core
 
 public export
@@ -12,7 +13,10 @@ maybeShow : (ms : MaybeShow a) => a -> String
 maybeShow {ms = YesShow _} x = show x
 maybeShow {ms = NoShow} x = "(not showable)"
 
-{-
-Show (DF sig) where
-  show (DF columns) = 
--}
+export
+toString : {sig : Sig} -> DF sig -> String
+toString df = ?rhs
+
+export
+{sig : Sig} -> Show (DF sig) where
+  show = toString . Ops.head 16

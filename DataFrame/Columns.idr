@@ -1,6 +1,15 @@
 module DataFrame.Columns
 
-import public DataFrame.Core
+import public Data.Vect
+
+import public DataFrame.Row
+import public DataFrame.Vector
+import public DataFrame.Signature
+
+public export
+data Columns : Nat -> Sig -> Type where
+  Nil : Columns n Nil
+  (::) : Vect n a -> Columns n sig -> Columns n (cn :- a :: sig)
 
 export
 (++) : {sig : Sig} -> Columns m sig -> Columns n sig -> Columns (m + n) sig
@@ -26,3 +35,24 @@ export
 where_ : {sig : Sig} -> Columns n sig -> (mask : Vect n Bool) -> Columns (trueCount mask) sig
 where_ {sig = []} [] mask = []
 where_ {sig = cn :- a :: sig} (xs :: cols) mask = (xs `where_` mask) :: (cols `where_` mask)
+
+export
+uncons : {sig : Sig} -> Columns (S n) sig -> (Row sig, Columns n sig)
+uncons {sig = []} [] = ([], [])
+uncons {sig = cn :- a :: sig} ((x :: xs) :: cols) =
+  case uncons cols of
+    (firstRow, rest) => (x :: firstRow, xs :: rest)
+
+export
+toRows : {n : Nat} -> {sig : Sig} -> Columns n sig -> List (Row sig)
+toRows {n = Z  } cols = []
+toRows {n = S _} cols = case uncons cols of
+  (row, rest) => row :: toRows rest
+
+export
+extract :
+    Columns rowCount sig
+    -> InSig cn a sig
+    -> Vect rowCount a
+extract (xs :: cols)  Here      = xs
+extract (xs :: cols) (There pf) = extract cols pf
