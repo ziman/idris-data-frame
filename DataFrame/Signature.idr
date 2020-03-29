@@ -1,5 +1,7 @@
 module DataFrame.Signature
 
+import public Data.List
+
 %default total
 
 -- (::) is infixr 7

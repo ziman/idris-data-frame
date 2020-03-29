@@ -17,3 +17,10 @@ where_ p df = MkDF (columns df `where_` p df)
 export
 head : {sig : Sig} -> Nat -> DF sig -> DF sig
 head n (MkDF cols) = MkDF (map (take n) cols)
+
+export
+uncons : {sig : Sig} -> (df : DF sig) -> Maybe (Row sig, DF sig)
+uncons (MkDF {rowCount = Z} cols) = Nothing
+uncons (MkDF {rowCount = S n} cols) =
+  case uncons cols of
+     (row, rest) => Just (row, MkDF rest)

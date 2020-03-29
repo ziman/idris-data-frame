@@ -1,5 +1,6 @@
 module DataFrame.Vector
 
+import public Data.Nat
 import public Data.Vect
 
 export
@@ -70,14 +71,8 @@ where_ : Vect n a -> (mask : Vect n Bool) -> Vect (trueCount mask) a
 where_ [] [] = []
 where_ (x :: xs) (True :: mask) = x :: (xs `where_` mask)
 
-public export
-minNat : Nat -> Nat -> Nat
-minNat Z n = Z
-minNat (S m) Z = Z
-minNat (S m) (S n) = S (minNat m n)
-
 export
-take : (m : Nat) -> Vect n a -> Vect (minNat m n) a
+take : (m : Nat) -> Vect n a -> Vect (minimum m n) a
 take Z xs = []
 take (S m) [] = []
 take (S m) (x :: xs) = x :: take m xs
