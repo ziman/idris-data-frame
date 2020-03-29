@@ -26,12 +26,6 @@ namespace All
     Nil : All p []
     (::) : p a -> All p sig -> All p (cn :- a :: sig)
 
-namespace Annotation
-  public export
-  data Annotation : (Type -> Type) -> Sig -> Type where
-    Nil : Annotation p []
-    (::) : (i : SigItem (p a)) -> Annotation p sig -> Annotation p (name i :- a :: sig)
-
 namespace InSig
   public export
   data InSig : (cn : String) -> (a : Type) -> (sig : Sig) -> Type where
