@@ -32,7 +32,7 @@ CsvSig = All CsvValue
 parseCells : {sig : Sig} -> (csvSig : CsvSig sig) => Int -> List String -> Either String (Columns 1 sig)
 parseCells {sig = []} {csvSig = []} rowNr [] = Right []
 parseCells {sig = []} {csvSig = []} rowNr (_ :: _) = Left $ "row " ++ show rowNr ++ ": too many columns"
-parseCells {sig = cn :- a :: sig} {csvSig = _ :: csvSig} rowNr (cell :: cells) = do
+parseCells {sig = (cn :- a) :: sig} {csvSig = _ :: csvSig} rowNr (cell :: cells) = do
   cellParsed <- case fromString cell of
     Left err => Left $ "row " ++ show rowNr ++ ": " ++ err
     Right value => Right value

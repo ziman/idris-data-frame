@@ -32,11 +32,15 @@ uncons (MkDF {rowCount = S n} cols) =
 
 selectCols : {sig : Sig} -> SigF (Expr sig) newSig -> (df : DF sig) -> Columns (rowCount df) newSig
 selectCols [] df = []
-selectCols (cn :- e :: es) df = eval df e :: selectCols es df
+selectCols ((cn :- e) :: es) df = eval df e :: selectCols es df
 
 export
 select : {sig : Sig} -> SigF (Expr sig) newSig -> DF sig -> DF newSig
 select es df = MkDF (selectCols es df)
+
+export
+modify : {sig, addSig : Sig} -> SigF (Expr sig) addSig -> DF sig -> DF (sig `overrideWith` addSig)
+modify es df = MkDF $ columns df `overrideWith` selectCols es df
 
 public export
 data OrderBy : Sig -> Type where

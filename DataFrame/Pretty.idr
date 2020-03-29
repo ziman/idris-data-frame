@@ -31,6 +31,12 @@ ShowDF String where
   alignment = Left
 
 export
+ShowDF Bool where
+  showDF True = "yes"
+  showDF False = "no"
+  alignment = Left
+
+export
 ShowDF a => ShowDF (Maybe a) where
   showDF (Just x) = showDF x
   showDF Nothing = ""
@@ -39,7 +45,7 @@ ShowDF a => ShowDF (Maybe a) where
 toStringColumns : {sig : Sig} -> (sdfs : All ShowDF sig)
     => Columns n sig -> Vect (length sig) (Alignment, String, Vect n String)
 toStringColumns {sig = []} [] = []
-toStringColumns {sig = cn :- a :: sig} {sdfs = sdf :: _} (xs :: cols) =
+toStringColumns {sig = (cn :- a) :: sig} {sdfs = sdf :: _} (xs :: cols) =
   (alignment {a}, cn, map showDF xs) :: toStringColumns cols
 
 pad : Alignment -> Nat -> Char -> String -> String

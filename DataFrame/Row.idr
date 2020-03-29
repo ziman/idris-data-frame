@@ -7,4 +7,4 @@ import public DataFrame.Signature
 public export
 data Row : Sig -> Type where
   Nil : Row Nil
-  (::) : a -> Row sig -> Row (cn :- a :: sig)
+  (::) : a -> Row sig -> Row ((cn :- a) :: sig)

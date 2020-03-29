@@ -1,6 +1,7 @@
 module DataFrame.Columns
 
 import public Data.Vect
+import Decidable.Equality
 
 import DataFrame.Utils
 import DataFrame.Vector
@@ -10,22 +11,22 @@ import public DataFrame.Signature
 public export
 data Columns : Nat -> Sig -> Type where
   Nil : Columns n Nil
-  (::) : Vect n a -> Columns n sig -> Columns n (cn :- a :: sig)
+  (::) : Vect n a -> Columns n sig -> Columns n ((cn :- a) :: sig)
 
 export
 (++) : {sig : Sig} -> Columns m sig -> Columns n sig -> Columns (m + n) sig
 (++) {sig = []} [] [] = []
-(++) {sig = cn :- a :: sig} (xs :: cs) (xs' :: cs') = (xs ++ xs') :: cs ++ cs'
+(++) {sig = (cn :- a) :: sig} (xs :: cs) (xs' :: cs') = (xs ++ xs') :: cs ++ cs'
 
 export
 reverse : {sig : Sig} -> Columns n sig -> Columns n sig
 reverse {sig = []} [] = []
-reverse {sig = cn :- a :: sig} (xs :: cs) = reverse xs :: reverse cs
+reverse {sig = (cn :- a) :: sig} (xs :: cs) = reverse xs :: reverse cs
 
 export
 empty : {sig : Sig} -> Columns 0 sig
 empty {sig = []} = []
-empty {sig = cn :- a :: sig} = [] :: empty
+empty {sig = (cn :- a) :: sig} = [] :: empty
 
 export
 deepMap : {sig : Sig}
@@ -34,7 +35,7 @@ deepMap : {sig : Sig}
     -> Columns n sig
     -> Columns m (Map p sig)
 deepMap {sig = []} p f [] = []
-deepMap {sig = cn :- a :: sig} p f (xs :: cols) = f xs :: deepMap p f cols
+deepMap {sig = (cn :- a) :: sig} p f (xs :: cols) = f xs :: deepMap p f cols
 
 export
 map : {sig : Sig}
@@ -45,12 +46,12 @@ map {sig} f cols = rewrite sym (sigMapId sig) in deepMap (\x => x) f cols
 export
 where_ : {sig : Sig} -> Columns n sig -> (mask : Vect n Bool) -> Columns (trueCount mask) sig
 where_ {sig = []} [] mask = []
-where_ {sig = cn :- a :: sig} (xs :: cols) mask = (xs `where_` mask) :: (cols `where_` mask)
+where_ {sig = (cn :- a) :: sig} (xs :: cols) mask = (xs `where_` mask) :: (cols `where_` mask)
 
 export
 uncons : {sig : Sig} -> Columns (S n) sig -> (Row sig, Columns n sig)
 uncons {sig = []} [] = ([], [])
-uncons {sig = cn :- a :: sig} ((x :: xs) :: cols) =
+uncons {sig = (cn :- a) :: sig} ((x :: xs) :: cols) =
   case uncons cols of
     (firstRow, rest) => (x :: firstRow, xs :: rest)
 
@@ -102,3 +103,14 @@ export
 orderBy : Ord a => ({0 b : Type} -> Vect n b -> Vect n b) -> Vect n a -> Columns n sig -> Columns n sig
 orderBy f perm [] = []
 orderBy f perm (col :: cols) = f (permute perm col) :: orderBy f perm cols
+
+insert : {sig : Sig} -> (cn : String) -> Vect n a -> Columns n sig -> Columns n (insert cn a sig)
+insert cn xs [] = [xs]
+insert {sig = (cn' :- a') :: sig'} cn xs (xs' :: xss') with (decEq cn cn')
+  insert {sig = (cn  :- a') :: sig'} cn xs (xs' :: xss') | Yes Refl = xs  :: xss'
+  insert {sig = (cn' :- a') :: sig'} cn xs (xs' :: xss') | No  _    = xs' :: insert cn xs xss'
+
+export
+overrideWith : {sig, sig' : Sig} -> Columns n sig -> Columns n sig' -> Columns n (sig `overrideWith` sig')
+overrideWith {sig' = []} xss [] = xss
+overrideWith {sig' = (cn' :- a') :: sig'} xss (xs' :: xss') = insert cn' xs' xss `overrideWith` xss'
