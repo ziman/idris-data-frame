@@ -1,15 +1,9 @@
 # idris-data-frame
 
-Let's get imports out of the way first.
-```idris
-module Main
-
-import Data.Maybe
-import DataFrame
-```
-
 Here's how you make data frame literals:
 ```idris
+import DataFrame
+
 df : DF ["name" :- String, "age" :- Int, "pet" :- Maybe String]
 df = MkDF
   [ ["Joe", "Anne", "Lisa", "Bob", "Zorg"]
