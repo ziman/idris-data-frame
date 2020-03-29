@@ -2,6 +2,7 @@ module DataFrame.Columns
 
 import public Data.Vect
 
+import DataFrame.Utils
 import public DataFrame.Row
 import public DataFrame.Vector
 import public DataFrame.Signature
@@ -27,9 +28,19 @@ empty {sig = []} = []
 empty {sig = cn :- a :: sig} = [] :: empty
 
 export
-map : {sig : Sig} -> ({a : Type} -> Vect n a -> Vect m a) -> Columns n sig -> Columns m sig
-map {sig = []} f [] = []
-map {sig = cn :- a :: sig} f (xs :: cols) = f xs :: map f cols
+deepMap : {sig : Sig}
+    -> (p : Type -> Type)
+    -> (f : {0 a : Type} -> Vect n a -> Vect m (p a))
+    -> Columns n sig
+    -> Columns m (Map p sig)
+deepMap {sig = []} p f [] = []
+deepMap {sig = cn :- a :: sig} p f (xs :: cols) = f xs :: deepMap p f cols
+
+export
+map : {sig : Sig}
+    -> (f : {0 a : Type} -> Vect n a -> Vect m a)
+    -> Columns n sig -> Columns m sig
+map {sig} f cols = rewrite sym (sigMapId sig) in deepMap (\x => x) f cols
 
 export
 where_ : {sig : Sig} -> Columns n sig -> (mask : Vect n Bool) -> Columns (trueCount mask) sig

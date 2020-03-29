@@ -1,6 +1,5 @@
 module DataFrame
 
-import public DataFrame.Core
 import public DataFrame.DataFrame
 import public DataFrame.IO
 import public DataFrame.Ops

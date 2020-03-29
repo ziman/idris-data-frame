@@ -1,22 +1,26 @@
 module DataFrame.Pretty
 
 import DataFrame.Ops
-import public DataFrame.Core
+import public DataFrame.DataFrame
 
-public export
 data MaybeShow : Type -> Type where
   YesShow : Show a -> MaybeShow a
   NoShow : MaybeShow a
 
-public export
 maybeShow : (ms : MaybeShow a) => a -> String
 maybeShow {ms = YesShow _} x = show x
 maybeShow {ms = NoShow} x = "(not showable)"
 
-export
-toString : {sig : Sig} -> DF sig -> String
-toString df = ?rhs
+toColumns : {sig : Sig} -> (mbShow : All MaybeShow sig)
+    => Columns n sig -> List (String, Vect n String)
+toColumns {sig = []} [] = []
+toColumns {sig = cn :- a :: sig} {mbShow = _ :: _} (xs :: cols) =
+  (cn, map maybeShow xs) :: toColumns cols
 
 export
-{sig : Sig} -> Show (DF sig) where
+toString : {sig : Sig} -> All MaybeShow sig => DF sig -> String
+toString (MkDF cols) = ?rhs
+
+export
+{sig : Sig} -> All MaybeShow sig => Show (DF sig) where
   show = toString . Ops.head 16

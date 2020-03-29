@@ -16,4 +16,4 @@ where_ p df = MkDF (columns df `where_` p df)
 
 export
 head : {sig : Sig} -> Nat -> DF sig -> DF sig
-head n (MkDF columns) = MkDF (map (take n) columns)
+head n (MkDF cols) = MkDF (map (take n) cols)

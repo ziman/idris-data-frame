@@ -11,14 +11,17 @@ record SigItem where
   type : Type
 
 public export
+mapItemType : (Type -> Type) -> SigItem -> SigItem
+mapItemType p (cn :- a) = cn :- p a
+
+public export
 Sig : Type
 Sig = List SigItem
 
-namespace SigAll
-  public export
-  data SigAll : (Type -> Type) -> Sig -> Type where
-    Nil : SigAll p []
-    (::) : p a -> SigAll p sig -> SigAll p (cn :- a :: sig)
+public export
+data All : (Type -> Type) -> Sig -> Type where
+  Nil : All p []
+  (::) : p a -> All p sig -> All p (cn :- a :: sig)
 
 namespace InSig
   public export
@@ -26,3 +29,12 @@ namespace InSig
     [search cn sig]
     Here : InSig cn x (cn :- x :: sig)
     There : InSig cn x sig -> InSig cn x (cn' :- x' :: sig)
+
+public export
+Map : (Type -> Type) -> Sig -> Sig
+Map = map . mapItemType
+
+export
+sigMapId : (sig : Sig) -> Map (\x => x) sig = sig
+sigMapId [] = Refl
+sigMapId (cn :- a :: sig) = cong ((cn :- a) ::) (sigMapId sig)
