@@ -33,11 +33,13 @@ export
 select : {sig : Sig} -> SigF (Expr sig) newSig -> DF sig -> DF newSig
 select es df = MkDF (selectCols es df)
 
-{-
-namespace OrderBy
-  public export
-  data 
+public export
+data OrderBy : Sig -> Type where
+  Asc : (cn : String) -> Ord a => InSig cn a sig => OrderBy sig
+  Desc : (cn : String) -> Ord a => InSig cn a sig => OrderBy sig
 
 export
-orderBy : {sig : Sig} -> Exprs
--}
+orderBy : {sig : Sig} -> List (OrderBy sig) -> DF sig -> DF sig
+orderBy [] df = df
+orderBy (Asc  x :: xs) df = MkDF $ Columns.orderBy (          df ^. x) (columns df)
+orderBy (Desc x :: xs) df = MkDF $ Columns.orderBy (reverse $ df ^. x) (columns df)

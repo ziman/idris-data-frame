@@ -30,6 +30,12 @@ ShowDF String where
   showDF = id
   alignment = Left
 
+export
+ShowDF a => ShowDF (Maybe a) where
+  showDF (Just x) = showDF x
+  showDF Nothing = ""
+  alignment = alignment {a=a}
+
 toStringColumns : {sig : Sig} -> (sdfs : All ShowDF sig)
     => Columns n sig -> Vect (length sig) (Alignment, String, Vect n String)
 toStringColumns {sig = []} [] = []
