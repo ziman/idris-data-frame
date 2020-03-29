@@ -1,5 +1,7 @@
 # idris-data-frame
 
+This is a library for [Idris 2](https://github.com/edwinb/Idris2/).
+
 Here's how you make data frame literals:
 ```idris
 import DataFrame
