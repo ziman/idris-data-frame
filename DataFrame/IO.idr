@@ -20,6 +20,11 @@ export
 CsvValue Int where
   fromString str = Right (cast str)  -- TODO
 
+export
+CsvValue a => CsvValue (Maybe a) where
+  fromString "" = Right Nothing
+  fromString s  = Just <$> fromString s
+
 public export
 CsvSig : Sig -> Type
 CsvSig = All CsvValue

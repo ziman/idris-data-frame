@@ -53,6 +53,11 @@ Fractional a => Fractional (Expr sig a) where
   recip = map recip
 
 export
+Integral a => Integral (Expr sig a) where
+  div = BinOp div
+  mod = BinOp mod
+
+export
 (==) : Eq a => Expr sig a -> Expr sig a -> Expr sig Bool
 (==) = BinOp (==)
 
