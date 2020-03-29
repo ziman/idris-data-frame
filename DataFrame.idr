@@ -1,7 +1,9 @@
 module Main
 
+import System.File
 import Data.List
 import Data.Vect
+import Data.Strings
 import Decidable.Equality
 
 %default total
@@ -60,6 +62,25 @@ df = MkDF 3
     [ "name" :- ["Joe", "Anne", "Lisa"]
     , "age"  :- [1, 2, 3]
     ]
+
+infix 3 <&>
+(<&>) : Functor f => f a -> (a -> b) -> f b
+(<&>) x f = map f x
+
+parseCsv : (sig : Sig) -> List String -> Either String (DF sig)
+parseCsv sig lines = ?rhs
+
+readFileLines : String -> IO (Either String (List String))
+readFileLines fname =
+  readFile fname <&> \case
+    Left err => Left (show err)
+    Right str => Right (lines str)
+
+readCsv : String -> (sig : Sig) -> IO (Either String (DF sig))
+readCsv fname sig =
+  readFileLines fname <&> \case
+    Left err => Left err
+    Right lines => parseCsv sig lines
 
 main : IO ()
 main = putStrLn "hello world"
