@@ -7,18 +7,18 @@ import public Data.List
 -- (::) is infixr 7
 infix 8 :-
 public export
-record SigItem a where
+record Named a where
   constructor (:-)
   name : String
   type : a
 
 public export
-mapItemType : (a -> b) -> SigItem a -> SigItem b
+mapItemType : (a -> b) -> Named a -> Named b
 mapItemType p (cn :- a) = cn :- p a
 
 public export
 Sig : Type
-Sig = List (SigItem Type)
+Sig = List (Named Type)
 
 namespace All
   public export
@@ -34,7 +34,7 @@ namespace InSig
     There : InSig cn x sig -> InSig cn x (cn' :- x' :: sig)
 
 public export
-Map : (a -> b) -> List (SigItem a) -> List (SigItem b)
+Map : (a -> b) -> List (Named a) -> List (Named b)
 Map = map . mapItemType
 
 export

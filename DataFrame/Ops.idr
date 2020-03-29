@@ -24,3 +24,17 @@ uncons (MkDF {rowCount = Z} cols) = Nothing
 uncons (MkDF {rowCount = S n} cols) =
   case uncons cols of
      (row, rest) => Just (row, MkDF rest)
+
+namespace Exprs
+  public export
+  data Exprs : Sig -> Sig -> Type where
+    Nil : Exprs sig []
+    (::) : (e : Named (Expr sig a)) -> Exprs sig newSig -> Exprs sig (name e :- a :: newSig)
+
+selectCols : {sig : Sig} -> Exprs sig newSig -> (df : DF sig) -> Columns (rowCount df) newSig
+selectCols [] df = []
+selectCols (cn :- e :: es) df = eval df e :: selectCols es df
+
+export
+select : {sig : Sig} -> Exprs sig newSig -> DF sig -> DF newSig
+select es df = MkDF (selectCols es df)
