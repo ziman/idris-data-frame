@@ -22,7 +22,7 @@ CsvValue Int where
 
 public export
 CsvSig : Sig -> Type
-CsvSig = Signature.All CsvValue
+CsvSig = All CsvValue
 
 parseCells : {sig : Sig} -> (csvSig : CsvSig sig) => Int -> List String -> Either String (Columns 1 sig)
 parseCells {sig = []} {csvSig = []} rowNr [] = Right []

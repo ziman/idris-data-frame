@@ -7,23 +7,30 @@ import public Data.List
 -- (::) is infixr 7
 infix 8 :-
 public export
-record SigItem where
+record SigItem a where
   constructor (:-)
   name : String
-  type : Type
+  type : a
 
 public export
-mapItemType : (Type -> Type) -> SigItem -> SigItem
+mapItemType : (a -> b) -> SigItem a -> SigItem b
 mapItemType p (cn :- a) = cn :- p a
 
 public export
 Sig : Type
-Sig = List SigItem
+Sig = List (SigItem Type)
 
-public export
-data All : (Type -> Type) -> Sig -> Type where
-  Nil : All p []
-  (::) : p a -> All p sig -> All p (cn :- a :: sig)
+namespace All
+  public export
+  data All : (Type -> Type) -> Sig -> Type where
+    Nil : All p []
+    (::) : p a -> All p sig -> All p (cn :- a :: sig)
+
+namespace Annotation
+  public export
+  data Annotation : (Type -> Type) -> Sig -> Type where
+    Nil : Annotation p []
+    (::) : (i : SigItem (p a)) -> Annotation p sig -> Annotation p (name i :- a :: sig)
 
 namespace InSig
   public export
@@ -33,7 +40,7 @@ namespace InSig
     There : InSig cn x sig -> InSig cn x (cn' :- x' :: sig)
 
 public export
-Map : (Type -> Type) -> Sig -> Sig
+Map : (a -> b) -> List (SigItem a) -> List (SigItem b)
 Map = map . mapItemType
 
 export
