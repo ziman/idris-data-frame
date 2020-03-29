@@ -26,16 +26,23 @@ public export
 Sig : Type
 Sig = List SigItem
 
+namespace CsvSig
+  public export
+  data CsvSig : Sig -> Type where
+    Nil : CsvSig []
+    (::) : CsvValue a -> CsvSig sig -> CsvSig (cn :- a :: sig)
+
 public export
 record Column n a where
   constructor MkColumn
   name : String
   values : Vect n a
 
-public export
-data Columns : Nat -> Sig -> Type where
-  Nil : Columns n Nil
-  (::) : Vect n a -> Columns n sig -> Columns n (cn :- a :: sig)
+namespace Columns
+  public export
+  data Columns : Nat -> Sig -> Type where
+    Nil : Columns n Nil
+    (::) : Vect n a -> Columns n sig -> Columns n (cn :- a :: sig)
 
 public export
 record DF (sig : Sig) where
@@ -83,12 +90,37 @@ reverse : {sig : Sig} -> Columns n sig -> Columns n sig
 reverse {sig = []} [] = []
 reverse {sig = cn :- a :: sig} (xs :: cs) = reverse xs :: reverse cs
 
-parseColumns : Vect n String -> Either String (Columns n sig)
-parseColumns rows = ?rhs
+export
+empty : {sig : Sig} -> Columns 0 sig
+empty {sig = []} = []
+empty {sig = cn :- a :: sig} = [] :: empty
 
-parseCsv : (sig : Sig) -> List String -> Either String (DF sig)
+parseCells : {sig : Sig} -> (csvSig : CsvSig sig) => Int -> List String -> Either String (Columns 1 sig)
+parseCells {sig = []} {csvSig = []} rowNr [] = Right []
+parseCells {sig = []} {csvSig = []} rowNr (_ :: _) = Left $ "row " ++ show rowNr ++ ": too many columns"
+parseCells {sig = cn :- a :: sig} {csvSig = _ :: csvSig} rowNr (cell :: cells) = do
+  cellParsed <- case fromString cell of
+    Left err => Left $ "row " ++ show rowNr ++ ": " ++ err
+    Right value => Right value
+  cellsParsed <- parseCells rowNr cells
+  pure ([cellParsed] :: cellsParsed)
+
+parseRow : {sig : Sig} -> CsvSig sig => Int -> String -> Either String (Columns 1 sig)
+parseRow rowNr row = parseCells rowNr cells
+  where
+    cells : List String
+    cells = split (== ',') row  -- TODO: actual CSV parsing
+
+parseRows : {sig : Sig} -> CsvSig sig => Int -> Vect n String -> Either String (Columns n sig)
+parseRows rowNr [] = Right empty
+parseRows rowNr (row :: rows) = do
+  rowParsed <- parseRow rowNr row
+  rowsParsed <- parseRows (rowNr + 1) rows
+  pure (rowParsed ++ rowsParsed)
+
+parseCsv : (sig : Sig) -> CsvSig sig => List String -> Either String (DF sig)
 parseCsv sig [] = Left "no header found"
-parseCsv sig (hdr :: rs) = MkDF (length rs) . reverse <$> (parseColumns $ fromList rs)
+parseCsv sig (hdr :: rs) = MkDF (length rs) <$> (parseRows 1 $ fromList rs)
 
 readFileLines : String -> IO (Either String (List String))
 readFileLines fname =
@@ -97,7 +129,7 @@ readFileLines fname =
     Right str => Right (lines str)
 
 export
-readCsv : String -> (sig : Sig) -> IO (Either String (DF sig))
+readCsv : String -> (sig : Sig) -> CsvSig sig => IO (Either String (DF sig))
 readCsv fname sig =
   readFileLines fname <&> \case
     Left err => Left err
