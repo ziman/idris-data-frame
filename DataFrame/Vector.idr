@@ -2,35 +2,58 @@ module DataFrame.Vector
 
 import public Data.Vect
 
--- Vectorisable
+export
+rep : {n : Nat} -> a -> Vect n a
+rep {n} = replicate n
+
+export
+(||) : Vect n Bool -> Vect n Bool -> Vect n Bool
+(||) = zipWith (\x, y => x || Delay y)
+
+export
+(&&) : Vect n Bool -> Vect n Bool -> Vect n Bool
+(&&) = zipWith (\x, y => x && Delay y)
+
+export
+(==) : Eq a => Vect n a -> Vect n a -> Vect n Bool
+(==) = zipWith (==)
+
+export
+(/=) : Eq a => Vect n a -> Vect n a -> Vect n Bool
+(/=) = zipWith (/=)
+
+export
+(<) : Ord a => Vect n a -> Vect n a -> Vect n Bool
+(<) = zipWith (<)
+
+export
+(<=) : Ord a => Vect n a -> Vect n a -> Vect n Bool
+(<=) = zipWith (<=)
+
+export
+(>) : Ord a => Vect n a -> Vect n a -> Vect n Bool
+(>) = zipWith (>)
+
+export
+(>=) : Ord a => Vect n a -> Vect n a -> Vect n Bool
+(>=) = zipWith (>=)
+
 public export
-data VEable : Nat -> Type -> Type -> Type where
-  Vector : VEable n a (Vect n a)
-  Single : VEable n a a
-
--- Vectorised expression
-export
-data VE : Nat -> Type -> Type where
-  Lit : Vect n a -> VE n a
-  Repeat : (n : Nat) -> a -> VE n a
-  ZipWith : (a -> b -> c) -> VE n a -> VE n b -> VE n c
+Op : (Type -> Type) -> Type
+Op cls = {0 a : Type} -> {0 n : Nat} -> cls a => Vect n a -> Vect n a -> Vect n a
 
 export
-eval : VE n a -> Vect n a
-eval (Lit xs) = xs
-eval (Repeat n x) = replicate n x
-eval (ZipWith f xs ys) = zipWith f (eval xs) (eval ys)
+(+) : Op Num
+(+) = zipWith (+)
 
 export
-uncons : VE (S n) a -> (a, VE n a)
-uncons (Lit (x :: xs)) = (x, Lit xs)
-uncons (Repeat (S n) x) = (x, Repeat n x)
-uncons (ZipWith f xxs yys) =
-  case uncons xxs of
-    (x, xs) => case uncons yys of
-      (y, ys) => (f x y, ZipWith f xs ys)
+(-) : Op Neg
+(-) = zipWith (-)
 
 export
-vec : {n : Nat} -> (how : VEable n a ty) => ty -> VE n a
-vec {how = Vector} = Lit
-vec {n} {how = Single} = Repeat n
+(*) : Op Num
+(*) = zipWith (*)
+
+export
+(/) : Op Fractional
+(/) = zipWith (/)
