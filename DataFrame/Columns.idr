@@ -62,6 +62,11 @@ toRows {n = S _} cols = case uncons cols of
   (row, rest) => row :: toRows rest
 
 export
+singleton : {sig : Sig} -> Row sig -> Columns 1 sig
+singleton {sig = []} [] = []
+singleton {sig = (cn :- a) :: sig} (x :: xs) = [x] :: singleton xs
+
+export
 extract :
     Columns rowCount sig
     -> InSig cn a sig

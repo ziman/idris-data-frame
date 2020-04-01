@@ -54,3 +54,24 @@ orderStep (Desc x) df = MkDF $ orderBy reverse (df ^. x) (columns df)
 export
 orderBy : {sig : Sig} -> List (OrderBy sig) -> DF sig -> DF sig
 orderBy xs df = foldr orderStep df xs
+
+namespace GroupBy
+  public export
+  data GroupBy : Sig -> Type where
+    Nil : GroupBy sig
+    (::) : (cn : String) -> InSig cn a sig => GroupBy sig -> GroupBy sig
+
+export
+record GroupedDF (sig : Sig) where
+  constructor GDF
+  groups : GroupBy sig
+  ungroup : DF sig
+
+export
+groupBy : GroupBy sig -> DF sig -> GroupedDF sig
+groupBy = GDF
+
+export
+summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> GroupedDF sig -> Row sig'
+summarise [] (GDF gs df) = []
+summarise ((cn :- e) :: es) (GDF gs df) = eval df e :: summarise es (GDF gs df)

@@ -22,6 +22,9 @@ data Expr : Quantity -> Sig -> Type -> Type where
   -- special common case for efficiency
   BinOp : (a -> b -> c) -> Expr q sig a -> Expr q sig b -> Expr q sig c
 
+  -- summarisation
+  Summarise : (List a -> b) -> Expr Many sig a -> Expr One sig b
+
 export
 val : a -> Expr q sig a
 val = L
@@ -93,9 +96,42 @@ export
 (||) = BinOp (\x, y => x || Delay y)
 
 export
-eval : (df : DF sig) -> Expr Many sig a -> Vect (rowCount df) a
-eval df (L x) = replicate (rowCount df) x
-eval df (V cn) = df ^. cn
-eval df (Map f xs) = map f (eval df xs)
-eval df (Ap fs xs) = zipWith id (eval df fs) (eval df xs)
-eval df (BinOp f xs ys) = zipWith f (eval df xs) (eval df ys)
+summarise : (List a -> b) -> Expr Many sig a -> Expr One sig b
+summarise = Summarise
+
+export
+maximum : Ord a => a -> Expr Many sig a -> Expr One sig a
+maximum e = summarise $ foldr max e
+
+export
+minimum : Ord a => a -> Expr Many sig a -> Expr One sig a
+minimum e = summarise $ foldr min e
+
+export
+sum : Num a => Expr Many sig a -> Expr One sig a
+sum = summarise sum
+
+export
+product : Num a => Expr Many sig a -> Expr One sig a
+product = summarise product
+
+export
+count : Expr Many sig a -> Expr One sig Int
+count = summarise $ cast . length
+
+public export
+EvalTy : Quantity -> Nat -> Type -> Type
+EvalTy Many n a = Vect n a
+EvalTy One  n a = a
+
+export
+eval : {q : Quantity} -> (df : DF sig) -> Expr q sig a -> EvalTy q (rowCount df) a
+eval {q = Many} df (L x) = replicate (rowCount df) x
+eval {q = One}  df (L x) = x
+eval {q = Many} df (V cn) = df ^. cn
+eval {q = Many} df (Map f xs) = map f (eval df xs)
+eval {q = One}  df (Map f xs) = f (eval df xs)
+eval {q = Many} df (Ap fs xs) = zipWith id (eval df fs) (eval df xs)
+eval {q = One}  df (Ap fs xs) = (eval df fs) (eval df xs)
+eval {q = Many} df (BinOp f xs ys) = zipWith f (eval df xs) (eval df ys)
+eval {q = One}  df (BinOp f xs ys) = f (eval df xs) (eval df ys)

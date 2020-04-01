@@ -18,3 +18,7 @@ export
     -> {auto pf : InSig cn a sig}
     -> Vect (rowCount df) a
 (^.) df cn {pf} = extract (columns df) pf
+
+export
+fromRow : {sig : Sig} -> Row sig -> DF sig
+fromRow = MkDF . singleton
