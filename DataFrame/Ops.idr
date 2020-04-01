@@ -64,14 +64,12 @@ namespace GroupBy
 export
 record GroupedDF (sig : Sig) where
   constructor GDF
-  groups : GroupBy sig
-  ungroup : DF sig
+  groups : List (DF sig)
 
 export
 groupBy : GroupBy sig -> DF sig -> GroupedDF sig
-groupBy = GDF
+groupBy = ?rhs
 
 export
-summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> GroupedDF sig -> Row sig'
-summarise [] (GDF gs df) = []
-summarise ((cn :- e) :: es) (GDF gs df) = eval df e :: summarise es (GDF gs df)
+summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> GroupedDF sig -> DF sig'
+summarise es (GDF gs) = MkDF (summarise es gs)

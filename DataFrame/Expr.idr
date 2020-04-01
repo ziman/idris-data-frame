@@ -22,8 +22,7 @@ data Expr : Quantity -> Sig -> Type -> Type where
   -- special common case for efficiency
   BinOp : (a -> b -> c) -> Expr q sig a -> Expr q sig b -> Expr q sig c
 
-  -- summarisation
-  Summarise : (List a -> b) -> Expr Many sig a -> Expr One sig b
+  Aggregate : (List a -> b) -> Expr Many sig a -> Expr One sig b
 
 export
 val : a -> Expr q sig a
@@ -96,28 +95,28 @@ export
 (||) = BinOp (\x, y => x || Delay y)
 
 export
-summarise : (List a -> b) -> Expr Many sig a -> Expr One sig b
-summarise = Summarise
+aggregate : (List a -> b) -> Expr Many sig a -> Expr One sig b
+aggregate = Aggregate
 
 export
 maximum : Ord a => a -> Expr Many sig a -> Expr One sig a
-maximum e = summarise $ foldr max e
+maximum e = aggregate $ foldr max e
 
 export
 minimum : Ord a => a -> Expr Many sig a -> Expr One sig a
-minimum e = summarise $ foldr min e
+minimum e = aggregate $ foldr min e
 
 export
 sum : Num a => Expr Many sig a -> Expr One sig a
-sum = summarise sum
+sum = aggregate sum
 
 export
 product : Num a => Expr Many sig a -> Expr One sig a
-product = summarise product
+product = aggregate product
 
 export
 count : Expr Many sig a -> Expr One sig Int
-count = summarise $ cast . length
+count = aggregate $ cast . length
 
 public export
 EvalTy : Quantity -> Nat -> Type -> Type
@@ -135,3 +134,9 @@ eval {q = Many} df (Ap fs xs) = zipWith id (eval df fs) (eval df xs)
 eval {q = One}  df (Ap fs xs) = (eval df fs) (eval df xs)
 eval {q = Many} df (BinOp f xs ys) = zipWith f (eval df xs) (eval df ys)
 eval {q = One}  df (BinOp f xs ys) = f (eval df xs) (eval df ys)
+
+export
+summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> (gs : List (DF sig)) -> Columns (length gs) sig'
+summarise [] gs = []
+summarise ((cn :- e) :: es) gs
+  = map (\df => eval df e) (fromList gs) :: summarise es gs
