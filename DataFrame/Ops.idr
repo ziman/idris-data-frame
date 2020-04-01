@@ -16,7 +16,7 @@ public export
 (~>) x f = f x
 
 export
-where_ : {sig : Sig} -> (Expr sig Bool) -> (df : DF sig) -> DF sig
+where_ : {sig : Sig} -> (Expr Many sig Bool) -> (df : DF sig) -> DF sig
 where_ p df = MkDF (columns df `where_` eval df p)
 
 export
@@ -30,16 +30,16 @@ uncons (MkDF {rowCount = S n} cols) =
   case uncons cols of
      (row, rest) => Just (row, MkDF rest)
 
-selectCols : {sig : Sig} -> SigF (Expr sig) newSig -> (df : DF sig) -> Columns (rowCount df) newSig
+selectCols : {sig : Sig} -> SigF (Expr Many sig) newSig -> (df : DF sig) -> Columns (rowCount df) newSig
 selectCols [] df = []
 selectCols ((cn :- e) :: es) df = eval df e :: selectCols es df
 
 export
-select : {sig : Sig} -> SigF (Expr sig) newSig -> DF sig -> DF newSig
+select : {sig : Sig} -> SigF (Expr Many sig) newSig -> DF sig -> DF newSig
 select es df = MkDF (selectCols es df)
 
 export
-modify : {sig, addSig : Sig} -> SigF (Expr sig) addSig -> DF sig -> DF (sig `overrideWith` addSig)
+modify : {sig, addSig : Sig} -> SigF (Expr Many sig) addSig -> DF sig -> DF (sig `overrideWith` addSig)
 modify es df = MkDF $ columns df `overrideWith` selectCols es df
 
 public export
