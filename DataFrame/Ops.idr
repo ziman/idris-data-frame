@@ -17,7 +17,7 @@ public export
 
 export
 where_ : {sig : Sig} -> (Expr Many sig Bool) -> (df : DF sig) -> DF sig
-where_ p df = MkDF (columns df `where_` eval df p)
+where_ p df = MkDF (columns df `where_` (df ^- p))
 
 export
 head : {sig : Sig} -> Nat -> DF sig -> DF sig
@@ -32,7 +32,7 @@ uncons (MkDF {rowCount = S n} cols) =
 
 selectCols : {sig : Sig} -> SigF (Expr Many sig) newSig -> (df : DF sig) -> Columns (rowCount df) newSig
 selectCols [] df = []
-selectCols ((cn :- e) :: es) df = eval df e :: selectCols es df
+selectCols ((cn :- e) :: es) df = (df ^- e) :: selectCols es df
 
 export
 select : {sig : Sig} -> SigF (Expr Many sig) newSig -> DF sig -> DF newSig
@@ -44,32 +44,13 @@ modify es df = MkDF $ columns df `overrideWith` selectCols es df
 
 public export
 data OrderBy : Sig -> Type where
-  Asc : (cn : String) -> Ord a => InSig cn a sig => OrderBy sig
-  Desc : (cn : String) -> Ord a => InSig cn a sig => OrderBy sig
+  Asc : Ord a => Expr Many sig a -> OrderBy sig
+  Desc : Ord a => Expr Many sig a -> OrderBy sig
 
 orderStep : OrderBy sig -> DF sig -> DF sig
-orderStep (Asc  x) df = MkDF $ orderBy id      (df ^. x) (columns df)
-orderStep (Desc x) df = MkDF $ orderBy reverse (df ^. x) (columns df)
+orderStep (Asc  e) df = MkDF $ orderBy id      (df ^- e) (columns df)
+orderStep (Desc e) df = MkDF $ orderBy reverse (df ^- e) (columns df)
 
 export
 orderBy : {sig : Sig} -> List (OrderBy sig) -> DF sig -> DF sig
 orderBy xs df = foldr orderStep df xs
-
-namespace GroupBy
-  public export
-  data GroupBy : Sig -> Type where
-    Nil : GroupBy sig
-    (::) : (cn : String) -> InSig cn a sig => GroupBy sig -> GroupBy sig
-
-export
-record GroupedDF (sig : Sig) where
-  constructor GDF
-  groups : List (DF sig)
-
-export
-groupBy : GroupBy sig -> DF sig -> GroupedDF sig
-groupBy = ?rhs
-
-export
-summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> GroupedDF sig -> DF sig'
-summarise es (GDF gs) = MkDF (summarise es gs)

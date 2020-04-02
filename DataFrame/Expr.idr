@@ -15,11 +15,7 @@ data Expr : Quantity -> Sig -> Type -> Type where
   L : a -> Expr q sig a
   V : (cn : String) -> InSig cn a sig => Expr Many sig a
 
-  -- free applicative functor
   Map : (a -> b) -> Expr q sig a -> Expr q sig b
-  Ap : Expr q sig (a -> b) -> Expr q sig a -> Expr q sig b
-
-  -- special common case for efficiency
   BinOp : (a -> b -> c) -> Expr q sig a -> Expr q sig b -> Expr q sig c
 
   Aggregate : (List a -> b) -> Expr Many sig a -> Expr One sig b
@@ -39,7 +35,7 @@ Functor (Expr q sig) where
 export
 Applicative (Expr q sig) where
   pure = L
-  (<*>) = Ap
+  (<*>) = BinOp id
 
 export
 Num a => Num (Expr q sig a) where
@@ -123,20 +119,13 @@ EvalTy : Quantity -> Nat -> Type -> Type
 EvalTy Many n a = Vect n a
 EvalTy One  n a = a
 
+infix 3 ^-
 export
-eval : {q : Quantity} -> (df : DF sig) -> Expr q sig a -> EvalTy q (rowCount df) a
-eval {q = Many} df (L x) = replicate (rowCount df) x
-eval {q = One}  df (L x) = x
-eval {q = Many} df (V cn) = df ^. cn
-eval {q = Many} df (Map f xs) = map f (eval df xs)
-eval {q = One}  df (Map f xs) = f (eval df xs)
-eval {q = Many} df (Ap fs xs) = zipWith id (eval df fs) (eval df xs)
-eval {q = One}  df (Ap fs xs) = (eval df fs) (eval df xs)
-eval {q = Many} df (BinOp f xs ys) = zipWith f (eval df xs) (eval df ys)
-eval {q = One}  df (BinOp f xs ys) = f (eval df xs) (eval df ys)
-
-export
-summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> (gs : List (DF sig)) -> Columns (length gs) sig'
-summarise [] gs = []
-summarise ((cn :- e) :: es) gs
-  = map (\df => eval df e) (fromList gs) :: summarise es gs
+(^-) : {q : Quantity} -> (df : DF sig) -> Expr q sig a -> EvalTy q (rowCount df) a
+(^-) {q = Many} df (L x) = replicate (rowCount df) x
+(^-) {q = One}  df (L x) = x
+(^-) {q = Many} df (V cn) = df ^. cn
+(^-) {q = Many} df (Map f xs) = map f (df ^- xs)
+(^-) {q = One}  df (Map f xs) = f (df ^- xs)
+(^-) {q = Many} df (BinOp f xs ys) = zipWith f (df ^- xs) (df ^- ys)
+(^-) {q = One}  df (BinOp f xs ys) = f (df ^- xs) (df ^- ys)
