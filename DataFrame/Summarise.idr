@@ -12,9 +12,11 @@ namespace Ords
     Nil : Ords f
     (::) : Ord a => f a -> Ords f -> Ords f
 
-public export
-GroupBy : Sig -> Type
-GroupBy sig = Ords (Expr Many sig)
+namespace GroupBy
+  public export
+  data GroupBy : Sig -> Type where
+    Nil : GroupBy sig
+    (::) : Ord a => (cn : String) -> InSig cn a sig => GroupBy sig -> GroupBy sig
 
 namespace Breaks
   public export
@@ -33,7 +35,7 @@ record GroupedDF (sig : Sig) where
   constructor GDF
   {rowCount : Nat}
   {breaks : Breaks rowCount}
-  keys : Ords (Vect rowCount)
+  keys : GroupBy sig
   groups : Groups sig rowCount breaks
 
 breaksCol : Ord a => Vect n a -> Vect n Bool
@@ -58,10 +60,10 @@ groupCount : Breaks n -> Nat
 groupCount (One _) = 1
 groupCount (_ :: bs) = S (groupCount bs)
 
-infix 3 ^=
-(^=) : (df : DF sig) -> Ords (Expr Many sig) -> Ords (Vect (rowCount df))
-(^=) df [] = []
-(^=) df (e :: es) = (df ^- e) :: (df ^= es)
+infix 3 ^:
+(^:) : (df : DF sig) -> GroupBy sig -> Ords (Vect (rowCount df))
+(^:) df [] = []
+(^:) df (cn :: cns) = (df ^. cn) :: (df ^: cns)
 
 break : {sig : Sig} -> (bs : Breaks n) -> Columns n sig -> Groups sig n bs
 break (One n) cols = One cols
@@ -71,14 +73,14 @@ break (b :: bs) cols =
 
 toOrder : GroupBy sig -> List (OrderBy sig)
 toOrder [] = []
-toOrder (e :: es) = Asc e :: toOrder es
+toOrder (cn :: cns) = Asc (col cn) :: toOrder cns
 
 export
 groupBy : {sig : Sig} -> GroupBy sig -> DF sig -> GroupedDF sig
 groupBy gbs df =
   let df' = orderBy (toOrder gbs) df
-      bs  = df' ^= gbs
-    in GDF bs (break (breaks (breaksCols bs)) (columns df'))
+      bs  = df' ^: gbs
+    in GDF gbs (break (breaks (breaksCols bs)) (columns df'))
 
 summariseCol : Expr One sig a -> Groups sig n bs -> Vect (groupCount bs) a
 summariseCol e (One grp) = [MkDF grp ^- e]
