@@ -16,7 +16,7 @@ df = MkDF
 
 Here's how you read them from a CSV file:
 ```idris
-Right pets <- readCsv "/home/ziman/dev/dframe/example.csv"
+Right people <- readCsv "/home/ziman/dev/dframe/example.csv"
   [ "name"      :- String
   , "age"       :- Int
   , "gender"    :- Maybe String
@@ -24,7 +24,7 @@ Right pets <- readCsv "/home/ziman/dev/dframe/example.csv"
   ]
   Left err => putStrLn err
 
-printLn pets
+printLn people
 ```
 ```
 name     age gender pet   
@@ -40,7 +40,7 @@ Hamish    78 M      futret
 
 [dplyr](https://dplyr.tidyverse.org/)-style manipulation:
 ```idris
-pets
+people
   ~> modify
       [ "male_with_pet" :-
           (col "gender" == val (Just "M"))
@@ -65,9 +65,27 @@ Expressions are applicative functors and have instances
 of `Num`, `Neg`, `Fractional`, `Integral`, etc. as long as
 the underlying types do, to reduce syntactic noise.
 
+Aggregation and grouping:
+```idris
+people
+  ~> groupBy ["pet"]
+  ~> summarise ["count" :- count {a=Int}]
+  ~> modify ["pet" :- fromMaybe "(no pet)" <$> col "pet"]
+  ~> orderBy [Desc (col "count")]
+  ~> printLn
+```
+```
+pet      count
+-------- -----
+dog          3
+(no pet)     2
+futret       1
+cat          1
+```
+
 Some more manipulation:
 ```idris
-pets
+people
   ~> where_ (isJust <$> col "pet")
   ~> select
       [ "name" :- col "name"
