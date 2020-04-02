@@ -56,6 +56,13 @@ uncons {sig = (cn :- a) :: sig} ((x :: xs) :: cols) =
     (firstRow, rest) => (x :: firstRow, xs :: rest)
 
 export
+takeRows : {sig : Sig} -> (k : Nat) -> Columns (k + n) sig -> (Columns k sig, Columns n sig)
+takeRows {sig = []} k [] = ([], [])
+takeRows {sig = (cn :- a) :: sig} k (col :: cols) =
+  case (splitAt k col, takeRows k cols) of
+    ((gcol, rcol), (gcols, rcols)) => (gcol :: gcols, rcol :: rcols)
+
+export
 toRows : {n : Nat} -> {sig : Sig} -> Columns n sig -> List (Row sig)
 toRows {n = Z  } cols = []
 toRows {n = S _} cols = case uncons cols of

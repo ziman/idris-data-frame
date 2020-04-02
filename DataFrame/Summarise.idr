@@ -5,68 +5,76 @@ import public DataFrame.Expr
 
 %default total
 
-public export
-data Ords : (Type -> Type) -> Type where
-  Nil : Ords f
-  (::) : Ord a => f a -> Ords f -> Ords f
+namespace Ords
+  public export
+  data Ords : (Type -> Type) -> Type where
+    Nil : Ords f
+    (::) : Ord a => f a -> Ords f -> Ords f
 
 public export
 GroupBy : Sig -> Type
 GroupBy sig = Ords (Expr Many sig)
 
-data Groups : Nat -> Nat -> Type where
-  Stop : Groups Z 1
-  Keep : Groups r g -> Groups (S r) g       -- keep adding to the previous group
-  Break : Groups r g -> Groups (S r) (S g)  -- start a new group
+namespace Breaks
+  public export
+  data Breaks : Nat -> Type where
+    One : (n : Nat) -> Breaks n
+    (::) : (n : Nat) -> Breaks r -> Breaks (n + r)
+
+namespace Groups
+  public export
+  data Groups : Sig -> (n : Nat) -> Breaks n -> Type where
+    One : Columns b sig -> Groups sig b (One b)
+    (::) : Columns b sig -> Groups sig n bs -> Groups sig (b + n) (b :: bs)
 
 export
 record GroupedDF (sig : Sig) where
   constructor GDF
   {rowCount : Nat}
-  breaks : Vect rowCount Bool
-  columns : Columns rowCount sig
+  {breaks : Breaks rowCount}
+  groups : Groups sig rowCount breaks
 
 breaksCol : Ord a => Vect n a -> Vect n Bool
 breaksCol (x :: y :: xs) = (x /= y) :: breaksCol (y :: xs)
 breaksCol [x] = [False]
 breaksCol [] = []
 
-breaks : {n : Nat} -> Ords (Vect n) -> Vect n Bool
-breaks [] = replicate n False
-breaks [col] = breaksCol col  -- saves one zipWith (||) with False
-breaks (col :: cols) = breaksCol col || breaks cols
+breaksCols : {n : Nat} -> Ords (Vect n) -> Vect n Bool
+breaksCols [] = replicate n False
+breaksCols [col] = breaksCol col -- saves one zipWith
+breaksCols (col :: cols) = breaksCol col || breaksCols cols
 
-groupCount : Vect n Bool -> Nat
-groupCount [] = 1
-groupCount (False :: bs) = groupCount bs
-groupCount (True  :: bs) = 1 + groupCount bs
+inc : Breaks n -> Breaks (S n)
+inc (One n) = One (S n)
+inc (n :: ns) = S n :: ns
+
+breaks : (bs : Vect n Bool) -> Breaks n
+breaks [] = One Z
+breaks (True  :: bs) = 1 :: breaks bs
+breaks (False :: bs) = inc (breaks bs)
+
+groupCount : Breaks n -> Nat
+groupCount (One _) = 1
+groupCount (_ :: bs) = S (groupCount bs)
 
 infix 3 ^=
 (^=) : (df : DF sig) -> Ords (Expr Many sig) -> Ords (Vect (rowCount df))
 (^=) df [] = []
 (^=) df (e :: es) = (df ^- e) :: (df ^= es)
 
-export
-groupBy : GroupBy sig -> DF sig -> GroupedDF sig
-groupBy gbs df = GDF (breaks (df ^= gbs)) (columns df)
+break : {sig : Sig} -> (bs : Breaks n) -> Columns n sig -> Groups sig n bs
+break (One n) cols = One cols
+break (b :: bs) cols =
+  case takeRows b cols of
+    (grp, rest) => grp :: break bs rest
 
-{-
--> take exprs to group by
--> generate N columns
--> map each column (S n) to bool (n)
--> or the bools
--> split the columns
--> or maybe do that during summarisation
--}
-
-{-
 export
-summariseCols : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> (gs : List (DF sig)) -> Columns (length gs) sig'
-summariseCols [] gs = []
-summariseCols ((cn :- e) :: es) gs
-  = map (^- e) (fromList gs) :: summarise es gs
+groupBy : {sig : Sig} -> GroupBy sig -> DF sig -> GroupedDF sig
+groupBy gbs df = GDF (break (breaks (breaksCols (df ^= gbs))) (columns df))
+
+summariseGroups : SigF (Expr One sig) sig' -> Groups sig n bs -> Columns (groupCount bs) sig'
+summariseGroups es gs = ?rhs
 
 export
 summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> GroupedDF sig -> DF sig'
-summarise es (GDF gs) = MkDF (summarise es gs)
--}
+summarise es (GDF gs) = MkDF (summariseGroups es gs)
