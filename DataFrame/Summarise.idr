@@ -35,7 +35,13 @@ namespace Groups
   public export
   data Groups : (n : Nat) -> Breaks gb n -> Type where
     None : Groups Z None
-    One : (keys : Values gb) -> Columns (S bMinus1) sig -> Groups (S bMinus1) (One bMinus1 keys)
+    One :
+        {sig : Sig}
+        -> {gb : GroupBy sig}
+        -> {bs : Breaks gb (S bMinus1)}
+        -> (keys : Values gb)
+        -> Columns (S bMinus1) sig
+        -> Groups (S bMinus1) (One bMinus1 keys)
     More : 
         {sig : Sig}
         -> {gb : GroupBy sig}
@@ -116,7 +122,7 @@ groupCount (More nMinus1 row bs) = S (groupCount bs)
 
 break : {sig : Sig} -> {gb : GroupBy sig} -> (bs : Breaks gb n) -> Columns n sig -> Groups n bs
 break None cols = None
-break (One nMinus1 keys) cols = One keys cols
+break (One nMinus1 keys) cols = One {bs = One nMinus1 keys} keys cols
 break (More nMinus1 keys bs) cols =
   case takeRows (S nMinus1) cols of
     (grp, rest) => More keys grp $ break bs rest
@@ -134,16 +140,19 @@ groupBy gb df =
       gs  = break bs (columns df')
     in GDF {sig} bs gs
 
-{-
-summariseCol : Expr One sig a -> Groups sig n bs -> Vect (groupCount bs) a
-summariseCol e (One grp) = [MkDF grp ^- e]
-summariseCol e (grp :: grps) = (MkDF grp ^- e) :: summariseCol e grps
+summariseCol : {gb : GroupBy sig} -> {bs : Breaks gb n}
+    -> Expr One sig a -> Groups n bs -> Vect (groupCount bs) a
+summariseCol e None = []
+summariseCol e (One keys grp) = [MkDF grp ^- e]
+summariseCol e (More keys grp grps) = (MkDF grp ^- e) :: summariseCol e grps
 
-summariseCols : SigF (Expr One sig) sig' -> Groups sig n bs -> Columns (groupCount bs) sig'
-summariseCols [] gs = []
-summariseCols ((cn :- e) :: es) gs = summariseCol e gs :: summariseCols es gs
+summariseCols : SigF (Expr One sig) sig' -> (bs : Breaks gb n) -> Groups n bs -> Columns (groupCount bs) sig'
+summariseCols [] bs gs = []
+summariseCols ((cn :- e) :: es) bs gs = ?rhsC
+
+summarise' : SigF (Expr One sig) sig' -> (bs : Breaks gb n) -> Groups n bs -> Columns (groupCount bs) sig'
+summarise' es bs gs = ?rhsB
 
 export
 summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> GroupedDF sig -> DF sig'
-summarise es (GDF ks gs) = MkDF (summariseCols es gs)
--}
+summarise es (GDF bs gs) = MkDF (summarise' es bs gs)
