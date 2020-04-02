@@ -1,6 +1,7 @@
 module DataFrame.Summarise
 
 import DataFrame.Vector
+import DataFrame.Ops
 import public DataFrame.Expr
 
 %default total
@@ -67,9 +68,15 @@ break (b :: bs) cols =
   case takeRows b cols of
     (grp, rest) => grp :: break bs rest
 
+toOrder : GroupBy sig -> List (OrderBy sig)
+toOrder [] = []
+toOrder (e :: es) = Asc e :: toOrder es
+
 export
 groupBy : {sig : Sig} -> GroupBy sig -> DF sig -> GroupedDF sig
-groupBy gbs df = GDF (break (breaks (breaksCols (df ^= gbs))) (columns df))
+groupBy gbs df =
+  let df' = orderBy (toOrder gbs) df
+    in GDF $ break (breaks (breaksCols (df' ^= gbs))) (columns df')
 
 summariseCol : Expr One sig a -> Groups sig n bs -> Vect (groupCount bs) a
 summariseCol e (One grp) = [MkDF grp ^- e]
