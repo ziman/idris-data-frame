@@ -11,7 +11,7 @@ public export
 record Named a where
   constructor (:-)
   name : String
-  type : a
+  value : a
 
 public export
 mapItemType : (a -> b) -> Named a -> Named b
