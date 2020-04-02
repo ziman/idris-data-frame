@@ -16,6 +16,11 @@ interface ShowDF a where
   alignment : Alignment
 
 export
+ShowDF Integer where
+  showDF = show
+  alignment = Right
+
+export
 ShowDF Double where
   showDF = show
   alignment = Right
