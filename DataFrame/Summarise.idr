@@ -26,16 +26,26 @@ namespace Values
 
 namespace Breaks
   public export
-  data Breaks : Nat -> Type where
-    One : (n : Nat) -> Breaks n
-    (::) : (n : Nat) -> Breaks r -> Breaks (n + r)
+  data Breaks : GroupBy sig -> Nat -> Type where
+    None : Breaks gb Z
+    One : (nMinus1 : Nat) -> Values gb -> Breaks gb (S nMinus1)
+    More : (nMinus1 : Nat) -> Values gb -> Breaks gb r -> Breaks gb (S nMinus1 + r)
 
 namespace Groups
   public export
-  data Groups : Sig -> (n : Nat) -> Breaks n -> Type where
-    One : {b : Nat} -> Columns b sig -> Groups sig b (One b)
-    (::) : {b : Nat} -> Columns b sig -> Groups sig n bs -> Groups sig (b + n) (b :: bs)
+  data Groups : (n : Nat) -> Breaks gb n -> Type where
+    None : Groups Z None
+    One : {keys : Values gb} -> Columns (S bMinus1) sig -> Groups (S bMinus1) (One bMinus1 keys)
+    More : 
+        {sig : Sig}
+        -> {gb : GroupBy sig}
+        -> {keys : Values gb}
+        -> {bs : Breaks gb n}
+        -> Columns (S bMinus1) sig
+        -> Groups n bs
+        -> Groups (S bMinus1 + n) (More bMinus1 keys bs)
 
+{-
 export
 record GroupedDF (sig : Sig) where
   constructor GDF
@@ -43,6 +53,7 @@ record GroupedDF (sig : Sig) where
   {breaks : Breaks rowCount}
   keys : GroupBy sig
   groups : Groups sig rowCount breaks
+-}
 
 namespace Diff
   public export
@@ -52,33 +63,33 @@ namespace Diff
     New : a -> Diff (S n) a -> Diff (S (S n)) a
     Old :      Diff (S n) a -> Diff (S (S n)) a
 
-breaksCol : Ord a => Vect n a -> Diff n a
-breaksCol [] = None
-breaksCol [x] = One x
-breaksCol (x :: y :: xs) =
+diffCol : Ord a => Vect n a -> Diff n a
+diffCol [] = None
+diffCol [x] = One x
+diffCol (x :: y :: xs) =
   if x == y
-     then Old   $ breaksCol (y :: xs)
-     else New x $ breaksCol (y :: xs)
+     then Old   $ diffCol (y :: xs)
+     else New x $ diffCol (y :: xs)
 
 PrevTy : Nat -> Type -> Type -> Type
 PrevTy    Z  a b = ()
 PrevTy (S n) a b = (a, b)
 
-mergeBreaks : (o : Ord a) => (is : InSig cn a sig) => {gs : GroupBy sig}
+mergeDiffs : (o : Ord a) => (is : InSig cn a sig) => {gs : GroupBy sig}
   -> Diff n a -> Diff n (Values gs) -> (PrevTy n a (Values gs), Diff n (Values ((::) {o} cn {is} gs)))
-mergeBreaks None None = ((), None)
-mergeBreaks (One x) (One ys) = ((x,ys), One (x :: ys))
-mergeBreaks (New x xd) (New ys ysd) =
-  let ((_,_),pd) = mergeBreaks xd ysd
+mergeDiffs None None = ((), None)
+mergeDiffs (One x) (One ys) = ((x,ys), One (x :: ys))
+mergeDiffs (New x xd) (New ys ysd) =
+  let ((_,_),pd) = mergeDiffs xd ysd
     in ((x,ys), New (x :: ys) pd)
-mergeBreaks (Old xd) (New ys ysd) =
-  let ((px,_),pd) = mergeBreaks xd ysd
+mergeDiffs (Old xd) (New ys ysd) =
+  let ((px,_),pd) = mergeDiffs xd ysd
     in ((px,ys), New (px :: ys) pd)
-mergeBreaks (New x xd) (Old ysd) =
-  let ((_,pys),pd) = mergeBreaks xd ysd
+mergeDiffs (New x xd) (Old ysd) =
+  let ((_,pys),pd) = mergeDiffs xd ysd
     in ((x,pys), New (x :: pys) pd)
-mergeBreaks (Old xd) (Old ysd) =
-  let ((px,pys),pd) = mergeBreaks xd ysd
+mergeDiffs (Old xd) (Old ysd) =
+  let ((px,pys),pd) = mergeDiffs xd ysd
     in ((px,pys), Old pd)
 
 emptyDiff : (n : Nat) -> Diff n (Values [])
@@ -89,26 +100,28 @@ emptyDiff (S (S n)) = Old $ emptyDiff (S n)
 diff : (gb : GroupBy sig) -> (df : DF sig) -> Diff (rowCount df) (Values gb)
 diff [] df = emptyDiff _
 diff ((::) {is} cn cns) df = snd $
-  mergeBreaks {is} (breaksCol (df ^. cn)) (diff cns df)
+  mergeDiffs {is} (diffCol (df ^. cn)) (diff cns df)
+
+breaks : Diff (S n) (Values gb) -> Breaks gb (S n)
+breaks (One row) = One Z row
+breaks (New row d) = More Z row $ breaks d
+breaks (Old d) = case breaks d of
+  One nMinus1 row => One (S nMinus1) row
+  More nMinus1 row bs => More (S nMinus1) row bs
+
+groupCount : Breaks gb n -> Nat
+groupCount None = Z
+groupCount (One nMinus1 row) = 1
+groupCount (More nMinus1 row bs) = S (groupCount bs)
+
+break : {sig : Sig} -> {gb : GroupBy sig} -> (bs : Breaks gb n) -> Columns n sig -> Groups n bs
+break None cols = None
+break (One nMinus1 keys) cols = One cols
+break (More nMinus1 keys bs) cols =
+  case takeRows (S nMinus1) cols of
+    (grp, rest) => More grp $ break bs rest
 
 {-
-breaksCols : {n : Nat} -> Ords (Named . Vect (S n)) -> Vect n (Ords Maybe)
-breaksCols [] = replicate n False
-breaksCols [col] = breaksCol col -- saves one zipWith
-breaksCols (col :: cols) = breaksCol col || breaksCols cols
-
-breaks : (bs : Vect n Bool) -> Breaks n
-breaks [] = One Z
-breaks (True  :: bs) = 1 :: breaks bs
-breaks (False :: bs) =
-  case breaks bs of
-    One n => One (S n)
-    n :: ns => S n :: ns
-
-groupCount : Breaks n -> Nat
-groupCount (One _) = 1
-groupCount (_ :: bs) = S (groupCount bs)
-
 infix 3 ^:
 (^:) : (df : DF sig) -> (gb : GroupBy sig) -> Values (Named . Vect (rowCount df)) gb
 (^:) df [] = []
