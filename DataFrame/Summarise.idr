@@ -35,25 +35,24 @@ namespace Groups
   public export
   data Groups : (n : Nat) -> Breaks gb n -> Type where
     None : Groups Z None
-    One : {keys : Values gb} -> Columns (S bMinus1) sig -> Groups (S bMinus1) (One bMinus1 keys)
+    One : (keys : Values gb) -> Columns (S bMinus1) sig -> Groups (S bMinus1) (One bMinus1 keys)
     More : 
         {sig : Sig}
         -> {gb : GroupBy sig}
-        -> {keys : Values gb}
         -> {bs : Breaks gb n}
+        -> (keys : Values gb)
         -> Columns (S bMinus1) sig
         -> Groups n bs
         -> Groups (S bMinus1 + n) (More bMinus1 keys bs)
 
-{-
 export
 record GroupedDF (sig : Sig) where
   constructor GDF
   {rowCount : Nat}
-  {breaks : Breaks rowCount}
-  keys : GroupBy sig
-  groups : Groups sig rowCount breaks
--}
+  {sig : Sig}
+  {groupBy : GroupBy sig}
+  breaks : Breaks groupBy rowCount
+  groups : Groups rowCount breaks
 
 namespace Diff
   public export
@@ -102,7 +101,8 @@ diff [] df = emptyDiff _
 diff ((::) {is} cn cns) df = snd $
   mergeDiffs {is} (diffCol (df ^. cn)) (diff cns df)
 
-breaks : Diff (S n) (Values gb) -> Breaks gb (S n)
+breaks : Diff n (Values gb) -> Breaks gb n
+breaks None = None
 breaks (One row) = One Z row
 breaks (New row d) = More Z row $ breaks d
 breaks (Old d) = case breaks d of
@@ -116,24 +116,10 @@ groupCount (More nMinus1 row bs) = S (groupCount bs)
 
 break : {sig : Sig} -> {gb : GroupBy sig} -> (bs : Breaks gb n) -> Columns n sig -> Groups n bs
 break None cols = None
-break (One nMinus1 keys) cols = One cols
+break (One nMinus1 keys) cols = One keys cols
 break (More nMinus1 keys bs) cols =
   case takeRows (S nMinus1) cols of
-    (grp, rest) => More grp $ break bs rest
-
-{-
-infix 3 ^:
-(^:) : (df : DF sig) -> (gb : GroupBy sig) -> Values (Named . Vect (rowCount df)) gb
-(^:) df [] = []
-(^:) df (cn :: cns) = (cn :- (df ^. cn)) :: (df ^: cns)
--}
-
-{-
-break : {sig : Sig} -> (bs : Breaks n) -> Columns n sig -> Groups sig n bs
-break (One n) cols = One cols
-break (b :: bs) cols =
-  case takeRows b cols of
-    (grp, rest) => grp :: break bs rest
+    (grp, rest) => More keys grp $ break bs rest
 
 toOrder : GroupBy sig -> List (OrderBy sig)
 toOrder [] = []
@@ -141,11 +127,14 @@ toOrder (cn :: cns) = Asc (col cn) :: toOrder cns
 
 export
 groupBy : {sig : Sig} -> GroupBy sig -> DF sig -> GroupedDF sig
-groupBy gbs df =
-  let df' = orderBy (toOrder gbs) df
-      bs  = df' ^: gbs
-    in GDF gbs (break (breaks (breaksCols bs)) (columns df'))
+groupBy gb df = 
+  let df' = orderBy (toOrder gb) df
+      d   = diff gb df'
+      bs  = breaks d
+      gs  = break bs (columns df')
+    in GDF {sig} bs gs
 
+{-
 summariseCol : Expr One sig a -> Groups sig n bs -> Vect (groupCount bs) a
 summariseCol e (One grp) = [MkDF grp ^- e]
 summariseCol e (grp :: grps) = (MkDF grp ^- e) :: summariseCol e grps
