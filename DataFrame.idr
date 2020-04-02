@@ -6,4 +6,5 @@ import public DataFrame.IO
 import public DataFrame.Ops
 import public DataFrame.Pretty
 import public DataFrame.Signature
+import public DataFrame.Summarise
 import public DataFrame.Utils
