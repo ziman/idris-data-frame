@@ -16,7 +16,7 @@ namespace GroupBy
   public export
   data GroupBy : Sig -> Type where
     Nil : GroupBy sig
-    (::) : (o : Ord a) => (cn : String) -> (is : InSig cn a sig) => GroupBy sig -> GroupBy sig
+    (::) : {a : Type} -> (o : Ord a) => (cn : String) -> (is : InSig cn a sig) => GroupBy sig -> GroupBy sig
 
 namespace Values
   public export
@@ -146,13 +146,38 @@ summariseCol e None = []
 summariseCol e (One keys grp) = [MkDF grp ^- e]
 summariseCol e (More keys grp grps) = (MkDF grp ^- e) :: summariseCol e grps
 
-summariseCols : SigF (Expr One sig) sig' -> (bs : Breaks gb n) -> Groups n bs -> Columns (groupCount bs) sig'
+summariseCols : {gb : GroupBy sig} -> SigF (Expr One sig) sig' -> (bs : Breaks gb n) -> Groups n bs
+    -> Columns (groupCount bs) sig'
 summariseCols [] bs gs = []
-summariseCols ((cn :- e) :: es) bs gs = ?rhsC
+summariseCols ((cn :- e) :: es) bs gs = summariseCol e gs :: summariseCols es bs gs
 
-summarise' : SigF (Expr One sig) sig' -> (bs : Breaks gb n) -> Groups n bs -> Columns (groupCount bs) sig'
-summarise' es bs gs = ?rhsB
+keySig : GroupBy sig -> Sig
+keySig [] = []
+keySig ((::) {a} cn cns) = (cn :- a) :: keySig cns
+
+fromValues : Values gb -> Row (keySig gb)
+fromValues [] = []
+fromValues (x :: xs) = x :: fromValues xs
+
+keyColumns : {sig : Sig} -> {gb : GroupBy sig} -> {bs : Breaks gb n}
+    -> (gs : Groups n bs)
+    -> Columns (groupCount bs) (keySig gb)
+keyColumns None = empty
+keyColumns (One keys _) = singleton $ fromValues keys
+keyColumns (More keys _ gs) = cons (fromValues keys) (keyColumns gs)
+
+summarise' :
+    {sig, sig' : Sig}
+    -> SigF (Expr One sig) sig'
+    -> {gb : GroupBy sig}
+    -> (bs : Breaks gb n)
+    -> (gs : Groups n bs)
+    -> Columns (groupCount bs) (keySig gb `overrideWith` sig')
+summarise' es bs gs = keyColumns gs `overrideWith` summariseCols es bs gs
 
 export
-summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> GroupedDF sig -> DF sig'
+summarise : {sig, sig' : Sig}
+    -> SigF (Expr One sig) sig'
+    -> (gdf : GroupedDF sig)
+    -> DF (keySig (GroupedDF.groupBy gdf) `overrideWith` sig')
 summarise es (GDF bs gs) = MkDF (summarise' es bs gs)

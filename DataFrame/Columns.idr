@@ -19,6 +19,11 @@ export
 (++) {sig = (cn :- a) :: sig} (xs :: cs) (xs' :: cs') = (xs ++ xs') :: cs ++ cs'
 
 export
+bindCols : Columns n sig -> Columns n sig' -> Columns n (sig ++ sig')
+bindCols [] ys = ys
+bindCols (x :: xs) ys = x :: bindCols xs ys
+
+export
 reverse : {sig : Sig} -> Columns n sig -> Columns n sig
 reverse {sig = []} [] = []
 reverse {sig = (cn :- a) :: sig} (xs :: cs) = reverse xs :: reverse cs
@@ -47,6 +52,11 @@ export
 where_ : {sig : Sig} -> Columns n sig -> (mask : Vect n Bool) -> Columns (trueCount mask) sig
 where_ {sig = []} [] mask = []
 where_ {sig = (cn :- a) :: sig} (xs :: cols) mask = (xs `where_` mask) :: (cols `where_` mask)
+
+export
+cons : Row sig -> Columns n sig -> Columns (S n) sig
+cons [] [] = []
+cons (x :: xs) (col :: cols) = (x :: col) :: cons xs cols
 
 export
 uncons : {sig : Sig} -> Columns (S n) sig -> (Row sig, Columns n sig)
