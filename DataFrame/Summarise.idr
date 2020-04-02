@@ -52,12 +52,10 @@ namespace Groups
         -> Groups (S bMinus1 + n) (More bMinus1 keys bs)
 
 export
-record GroupedDF (sig : Sig) where
+record GroupedDF (sig : Sig) (gb : GroupBy sig) where
   constructor GDF
   {rowCount : Nat}
-  {sig : Sig}
-  {groupBy : GroupBy sig}
-  breaks : Breaks groupBy rowCount
+  breaks : Breaks gb rowCount
   groups : Groups rowCount breaks
 
 namespace Diff
@@ -132,7 +130,7 @@ toOrder [] = []
 toOrder (cn :: cns) = Asc (col cn) :: toOrder cns
 
 export
-groupBy : {sig : Sig} -> GroupBy sig -> DF sig -> GroupedDF sig
+groupBy : {sig : Sig} -> (gb : GroupBy sig) -> DF sig -> GroupedDF sig gb
 groupBy gb df = 
   let df' = orderBy (toOrder gb) df
       d   = diff gb df'
@@ -151,6 +149,7 @@ summariseCols : {gb : GroupBy sig} -> SigF (Expr One sig) sig' -> (bs : Breaks g
 summariseCols [] bs gs = []
 summariseCols ((cn :- e) :: es) bs gs = summariseCol e gs :: summariseCols es bs gs
 
+public export
 keySig : GroupBy sig -> Sig
 keySig [] = []
 keySig ((::) {a} cn cns) = (cn :- a) :: keySig cns
@@ -178,6 +177,7 @@ summarise' es bs gs = keyColumns gs `overrideWith` summariseCols es bs gs
 export
 summarise : {sig, sig' : Sig}
     -> SigF (Expr One sig) sig'
-    -> (gdf : GroupedDF sig)
-    -> DF (keySig (GroupedDF.groupBy gdf) `overrideWith` sig')
+    -> {gb : GroupBy sig}
+    -> (gdf : GroupedDF sig gb)
+    -> DF (keySig gb `overrideWith` sig')
 summarise es (GDF bs gs) = MkDF (summarise' es bs gs)
