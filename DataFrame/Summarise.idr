@@ -33,6 +33,7 @@ record GroupedDF (sig : Sig) where
   constructor GDF
   {rowCount : Nat}
   {breaks : Breaks rowCount}
+  keys : Ords (Vect rowCount)
   groups : Groups sig rowCount breaks
 
 breaksCol : Ord a => Vect n a -> Vect n Bool
@@ -76,7 +77,8 @@ export
 groupBy : {sig : Sig} -> GroupBy sig -> DF sig -> GroupedDF sig
 groupBy gbs df =
   let df' = orderBy (toOrder gbs) df
-    in GDF $ break (breaks (breaksCols (df' ^= gbs))) (columns df')
+      bs  = df' ^= gbs
+    in GDF bs (break (breaks (breaksCols bs)) (columns df'))
 
 summariseCol : Expr One sig a -> Groups sig n bs -> Vect (groupCount bs) a
 summariseCol e (One grp) = [MkDF grp ^- e]
@@ -88,4 +90,4 @@ summariseCols ((cn :- e) :: es) gs = summariseCol e gs :: summariseCols es gs
 
 export
 summarise : {sig, sig' : Sig} -> SigF (Expr One sig) sig' -> GroupedDF sig -> DF sig'
-summarise es (GDF gs) = MkDF (summariseCols es gs)
+summarise es (GDF ks gs) = MkDF (summariseCols es gs)
