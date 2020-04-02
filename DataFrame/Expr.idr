@@ -14,7 +14,7 @@ export
 data Expr : Quantity -> Sig -> Type -> Type where
   L : a -> Expr q sig a
   V : (cn : String) -> InSig cn a sig => Expr Many sig a
-  Count : Num a => Expr One sig a
+  Count : Num a => Expr q sig a
 
   Map : (a -> b) -> Expr q sig a -> Expr q sig b
   BinOp : (a -> b -> c) -> Expr q sig a -> Expr q sig b -> Expr q sig c
@@ -116,11 +116,7 @@ length : Expr Many sig a -> Expr One sig Int
 length = aggregate $ cast . length
 
 export
-countNum : Num a => Expr One sig a
-countNum = Count
-
-export
-count : Expr One sig Integer
+count : Num a => Expr q sig a
 count = Count
 
 public export
@@ -139,3 +135,4 @@ export
 (^-) {q = Many} df (BinOp f xs ys) = zipWith f (df ^- xs) (df ^- ys)
 (^-) {q = One}  df (BinOp f xs ys) = f (df ^- xs) (df ^- ys)
 (^-) {q = One}  df Count = fromInteger . cast $ rowCount df
+(^-) {q = Many} df Count = replicate (rowCount df) (fromInteger . cast $ rowCount df)
