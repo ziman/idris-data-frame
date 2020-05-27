@@ -1,6 +1,8 @@
 # idris-data-frame
 
-This is a library for [Idris 2](https://github.com/edwinb/Idris2/).
+This is a library for [Idris 2](https://github.com/edwinb/Idris2/),
+trying to replicate the feel of R's
+[tidyverse](https://www.tidyverse.org/)/[dplyr](https://dplyr.tidyverse.org/).
 
 Here's how you make data frame literals:
 ```idris
