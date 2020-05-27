@@ -3,6 +3,7 @@ module DataFrame.Ops
 import Data.Vect
 
 import DataFrame.Columns
+import DataFrame.Vector
 
 import public DataFrame.DataFrame
 import public DataFrame.Utils

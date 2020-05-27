@@ -3,6 +3,7 @@ module DataFrame.Pretty
 import Data.Nat
 import Data.Strings
 import DataFrame.Ops
+import DataFrame.Columns
 import public DataFrame.DataFrame
 
 %default total

@@ -136,3 +136,4 @@ export
 (^-) {q = One}  df (BinOp f xs ys) = f (df ^- xs) (df ^- ys)
 (^-) {q = One}  df Count = fromInteger . cast $ rowCount df
 (^-) {q = Many} df Count = replicate (rowCount df) (fromInteger . cast $ rowCount df)
+(^-) {q = One} df (Aggregate f e) = f $ toList (df ^- e)

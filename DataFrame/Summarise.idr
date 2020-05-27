@@ -2,6 +2,7 @@ module DataFrame.Summarise
 
 import DataFrame.Vector
 import DataFrame.Ops
+import DataFrame.Columns
 import public DataFrame.Expr
 
 %default total
@@ -66,13 +67,16 @@ namespace Diff
     New : a -> Diff (S n) a -> Diff (S (S n)) a
     Old :      Diff (S n) a -> Diff (S (S n)) a
 
+diffCol' : Ord a => a -> Vect n a -> Diff (S n) a
+diffCol' x [] = One x
+diffCol' x (y :: xs) =
+  if x == y
+     then Old   $ diffCol' y xs
+     else New x $ diffCol' y xs
+
 diffCol : Ord a => Vect n a -> Diff n a
 diffCol [] = None
-diffCol [x] = One x
-diffCol (x :: y :: xs) =
-  if x == y
-     then Old   $ diffCol (y :: xs)
-     else New x $ diffCol (y :: xs)
+diffCol (x :: xs) = diffCol' x xs
 
 PrevTy : Nat -> Type -> Type -> Type
 PrevTy    Z  a b = ()
