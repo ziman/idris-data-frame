@@ -1,6 +1,6 @@
 module DataFrame.DataFrame
 
-import DataFrame.Columns
+import public DataFrame.Columns
 import public DataFrame.Signature
 
 public export
