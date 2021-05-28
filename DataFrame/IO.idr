@@ -2,6 +2,7 @@ module DataFrame.IO
 
 import System.File
 import Data.Strings
+import Data.List1
 
 import DataFrame.Columns
 import DataFrame.Utils
@@ -46,7 +47,7 @@ parseRow : {sig : Sig} -> CsvSig sig => Int -> String -> Either String (Columns 
 parseRow rowNr row = parseCells rowNr cells
   where
     cells : List String
-    cells = split (== ',') row  -- TODO: actual CSV parsing
+    cells = List1.forget $ Strings.split (== ',') row  -- TODO: actual CSV parsing
 
 parseRows : {sig : Sig} -> CsvSig sig => Int -> Vect n String -> Either String (Columns n sig)
 parseRows rowNr [] = Right empty
@@ -63,7 +64,7 @@ readFileLines : String -> IO (Either String (List String))
 readFileLines fname =
   readFile fname <&> \case
     Left err => Left (show err)
-    Right str => Right (lines str)
+    Right str => Right (List1.forget $ lines str)
 
 export
 readCsv : String -> (sig : Sig) -> CsvSig sig => IO (Either String (DF sig))

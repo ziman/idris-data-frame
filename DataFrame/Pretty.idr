@@ -71,11 +71,11 @@ layout (width :: widths) ((al, cn, col) :: cols) =
 -- show with full control
 export
 toString : {sig : Sig} -> All ShowDF sig => DF sig -> String
-toString {sig} (MkDF {rowCount} cols) =
+toString {sig} (MkDF {rowCount = rcnt} cols) =
     unlines . map (unwords . toList) . toList
       $ transpose (layout (map colWidth scols) scols)
   where
-    scols : Vect (length sig) (Alignment, String, Vect rowCount String)
+    scols : Vect (length sig) (Alignment, String, Vect rcnt String)
     scols = toStringColumns cols
 
     colWidth : (Alignment, String, Vect m String) -> Nat

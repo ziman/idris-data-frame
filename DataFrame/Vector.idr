@@ -40,7 +40,7 @@ export
 (>=) = zipWith (>=)
 
 public export
-Op : (Type -> Type) -> Type
+0 Op : (Type -> Type) -> Type
 Op cls = {0 a : Type} -> {0 n : Nat} -> cls a => Vect n a -> Vect n a -> Vect n a
 
 export
