@@ -1,7 +1,7 @@
 module DataFrame.Pretty
 
 import Data.Nat
-import Data.Strings
+import Data.String
 import DataFrame.Ops
 import DataFrame.Columns
 import public DataFrame.DataFrame
