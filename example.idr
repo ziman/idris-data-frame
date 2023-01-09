@@ -17,10 +17,10 @@ df = MkDF
 main : IO ()
 main = do
   Right people <- readCsv "example.csv"
-    [ "name"      :- String
-    , "age"       :- Int
-    , "gender"    :- Maybe String
-    , "pet"       :- Maybe String
+    [ "name"   :- String
+    , "age"    :- Int
+    , "gender" :- Maybe String
+    , "pet"    :- Maybe String
     ]
     | Left err => putStrLn $ "could not load example.csv: " ++ err
 
