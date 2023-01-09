@@ -59,6 +59,24 @@ insert cn a ((cn' :- a') :: sig) with (decEq cn cn')
   insert cn a ((cn' :- a') :: sig) | No  _    = (cn' :- a') :: insert cn a sig
 
 public export
+delete : (cn : String) -> Sig -> Sig
+delete cn [] = []
+delete cn ((cn' :- a) :: sig) with (decEq cn cn')
+  delete cn ((cn :- a) :: sig) | Yes Refl = sig
+  delete cn ((cn' :- a) :: sig) | No _ = (cn' :- a) :: delete cn sig
+
+public export
 overrideWith : Sig -> Sig -> Sig
 overrideWith lhs [] = lhs
 overrideWith lhs ((cn :- a) :: rhs) = insert cn a lhs `overrideWith` rhs
+
+export
+fromThere : InSig cn a ((cn' :- b) :: sig) -> Not (cn = cn') -> InSig cn a sig
+fromThere Here neq = void (neq Refl)
+fromThere (There is) _ = is
+
+export
+lookup : (cn : String) -> (sig : Sig) -> (0 inSig : InSig cn a sig) -> Type
+lookup cn ((cn' :- a) :: sig) inSig with (decEq cn cn')
+  lookup cn ((cn :- a) :: sig) _ | Yes Refl = a
+  lookup cn ((cn' :- a) :: sig) is | No neq = lookup cn sig (fromThere is neq)
