@@ -40,7 +40,7 @@ namespace InSig
   data InSig : (cn : String) -> (a : Type) -> (sig : Sig) -> Type where
     [search cn sig]
     Here : InSig cn x ((cn :- x) :: sig)
-    There : InSig cn x sig -> InSig cn x ((cn' :- x') :: sig)
+    There : Not (cn = cn') -> InSig cn x sig -> InSig cn x ((cn' :- x') :: sig)
 
 public export
 Map : (a -> b) -> List (Named a) -> List (Named b)
@@ -73,10 +73,17 @@ overrideWith lhs ((cn :- a) :: rhs) = insert cn a lhs `overrideWith` rhs
 export
 fromThere : InSig cn a ((cn' :- b) :: sig) -> Not (cn = cn') -> InSig cn a sig
 fromThere Here neq = void (neq Refl)
-fromThere (There is) _ = is
+fromThere (There neq is) _ = is
+
+inSigEq : InSig cn a ((cn :- a') :: sig) -> a = a'
+inSigEq Here = Refl
+inSigEq (There neq is) = void $ neq Refl
+
+magic : (0 eq : x = y) -> x = y
+magic Refl = Refl
 
 export
-lookup : (cn : String) -> (sig : Sig) -> (0 inSig : InSig cn a sig) -> Type
+lookup : (cn : String) -> (sig : Sig) -> (0 inSig : InSig cn a sig) -> (a' : Type ** a' = a)
 lookup cn ((cn' :- a) :: sig) inSig with (decEq cn cn')
-  lookup cn ((cn :- a) :: sig) _ | Yes Refl = a
+  lookup cn ((cn :- a') :: sig) is | Yes Refl = (a' ** magic (sym $ inSigEq is))
   lookup cn ((cn' :- a) :: sig) is | No neq = lookup cn sig (fromThere is neq)

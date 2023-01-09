@@ -88,8 +88,8 @@ extract :
     Columns rowCount sig
     -> InSig cn a sig
     -> Vect rowCount a
-extract (xs :: cols)  Here      = xs
-extract (xs :: cols) (There pf) = extract cols pf
+extract (xs :: cols)  Here          = xs
+extract (xs :: cols) (There neq pf) = extract cols pf
 
 namespace StableSort
   export

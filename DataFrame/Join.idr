@@ -48,14 +48,12 @@ splitSig sig [] = MkSplitSig
   , notSelected = sig
   , restricted = []
   }
-splitSig sig ((::) {a} cn {inSig} cns) with (splitSig sig cns)
-  _ | subSig =
-    let a' = lookup cn sig inSig
-      in MkSplitSig
-        { selected = (cn :- a') :: subSig.selected
-        , notSelected = delete cn subSig.notSelected
-        , restricted = cn :: cnWeaken subSig.restricted
-        }
+splitSig sig ((::) {a} cn {inSig} cns) with (splitSig sig cns, lookup cn sig inSig)
+  _ | (subSig, (a ** Refl)) = MkSplitSig
+      { selected = (cn :- a) :: subSig.selected
+      , notSelected = delete cn subSig.notSelected
+      , restricted = cn :: cnWeaken subSig.restricted
+      }
 
 {-
 splitSig : (sig : Sig) -> (cns : ColNames sig ts) -> SplitSig cns
