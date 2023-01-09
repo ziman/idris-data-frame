@@ -3,7 +3,11 @@ module Main
 import Data.Maybe
 import DataFrame
 
-df : DF ["name" :- String, "age" :- Int, "pet" :- Maybe String]
+df : DF
+  [ "name" :- String
+  , "age"  :- Int
+  , "pet"  :- Maybe String
+  ]
 df = MkDF
   [ ["Joe", "Anne", "Lisa", "Bob", "Zorg"]
   , [11, 22, 22, 33, 22]
