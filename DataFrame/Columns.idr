@@ -110,13 +110,13 @@ namespace StableSort
 
 -- TODO: do this properly
 vecSortBy : (a -> a -> Ordering) -> Vect n a -> Vect n a
-vecSortBy p xs = rewrite pf in fromList sorted
+vecSortBy p xs = rewrite pf in fromList xsSorted
 where
-  pf : n = List.length sorted
+  pf : n = List.length xsSorted
   pf = believe_me (Refl {x = n})
 
-  sorted : List a
-  sorted = StableSort.sortBy p (toList xs)
+  xsSorted : List a
+  xsSorted = StableSort.sortBy p (toList xs)
 
 permute : Ord a => Vect n a -> Vect n b -> Vect n b
 permute perm = map snd . vecSortBy (\x, y => fst x `compare` fst y) . zip perm
